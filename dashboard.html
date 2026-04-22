@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>PS Construction Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+/* ================= UI ================= */
+body{
+margin:0;
+font-family:Arial;
+background:#0f172a;
+color:white;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px;
+background:#1e293b;
+}
+a{
+  padding-bottom: 40px; 
+  padding-left: 50%;
+  font-size: large;
+}
+.logo{width:45px}
+
+.container{padding:10px;padding-bottom:80px;}
+
+.card{
+background:#1e293b;
+padding:15px;
+border-radius:12px;
+margin-bottom:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.3);
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin:6px 0;
+border-radius:8px;
+border:none;
+background:#334155;
+color:white;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+margin-top:5px;
+}
+
+.add-btn{background:#22c55e;width:100%;}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:13px;
+}
+
+th{background:#3b82f6;}
+th,td{padding:8px;text-align:center;border-bottom:1px solid #555;}
+
+#toast{
+position:fixed;
+top:20px;
+right:20px;
+background:#111;
+padding:10px;
+display:none;
+border-radius:6px;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+}
+
+.modal-box{
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+width:90%;
+max-width:400px;
+}
+
+/* ================= END UI ================= */
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+  <img src="ps.png" class="logo"> 
+<h3>Dashboard</h3>
+
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+<!-- ADD -->
+
+<div class="card">
+<h4>Add Worker</h4>
+
+<input id="name" placeholder="Name">
+<select id="type">
+<option value="PSL">Labour</option>
+<option value="PSM">Mistri</option>
+<option value="PSC">Coolie</option>
+</select>
+
+<input id="rate" type="number" placeholder="Daily Rate">
+<input id="site" placeholder="Work Site">
+<input id="date" type="date">
+
+<button class="add-btn" onclick="addLabour()">Add</button>
+
+</div>
+
+<!-- SEARCH -->
+
+<div class="card">
+<input id="search" placeholder="Search..." onkeyup="searchLabour()">
+
+<table>
+<thead>
+<tr>
+<th>ID</th><th>Name</th><th>Site</th>
+<th>Days</th><th>Total</th>
+<th>Paid</th><th>Pending</th><th>Action</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+
+<div class="card">
+Total ₹ <span id="totalSalary">0</span> |
+Paid ₹ <span id="totalPaid">0</span> |
+Pending ₹ <span id="totalPending">0</span>
+</div>
+
+</div>
+
+<!-- MODAL INPUT -->
+
+<div id="inputModal" class="modal">
+<div class="modal-box">
+<h3 id="modalTitle"></h3>
+<input id="modalInput">
+<button onclick="submitModal()">OK</button>
+<button onclick="closeInputModal()">Cancel</button>
+
+</div>
+</div>
+
+<!-- DETAIL MODAL -->
+
+<div id="detailModal" class="modal">
+<div class="modal-box">
+<h3 id="modalName"></h3>
+
+<p><b>Site:</b> <span id="modalSite"></span></p>
+
+<p><b>Attendance:</b></p>
+<div id="modalAttendance"></div>
+
+<p><b>Overtime:</b></p>
+<div id="modalOT"></div>
+
+<button onclick="downloadSlip()">Download Slip</button> <button onclick="closeModal()">Close</button>
+
+</div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ================= FIREBASE ================= -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyDTp...",
+authDomain:"ps-construction-tech.firebaseapp.com",
+projectId:"ps-construction-tech"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+async function saveLabour(data){
+await addDoc(collection(db,"labours"),data);
+}
+
+async function loadData(){
+let snap=await getDocs(collection(db,"labours"));
+labourList=[];
+snap.forEach(d=>{
+labourList.push({firebaseId:d.id,...d.data()});
+});
+showData();
+}
+
+window.db=db;
+window.updateDoc=updateDoc;
+window.deleteDoc=deleteDoc;
+window.doc=doc;
+window.saveLabour=saveLabour;
+window.loadData=loadData;
+
+loadData();
+</script>
+
+<!-- ================= MAIN JS ================= -->
+
+<script>
+
+let labourList=[];
+let currentAction,currentIndex;
+
+function showToast(msg){
+toast.innerText=msg;
+toast.style.display="block";
+setTimeout(()=>toast.style.display="none",2000);
+}
+
+
+function generateTypeID(type){
+let f=labourList.filter(l=>l.id.startsWith(type));
+if(!f.length)return type+"001";
+let max=Math.max(...f.map(l=>parseInt(l.id.slice(3))));
+return type+(max+1).toString().padStart(3,"0");
+}
+
+function logout(){
+localStorage.removeItem("isLoggedIn");
+location.href="login.html";
+}
+
+async function addLabour(){
+let name=nameInput.value.trim();
+let rate=rateInput.value;
+let type=typeInput.value;
+let site=siteInput.value||"Not Assigned";
+
+if(!name||!rate)return showToast("Fill all");
+
+let id=generateTypeID(type);
+
+await saveLabour({
+id,name,type,site,
+rate:parseInt(rate),
+attendance:{},overtime:{},paid:0
+});
+
+setTimeout(()=>{
+loadData();
+showToast("Added ✅");
+},400);
+}
+
+/* ========= MODAL ========= */
+function openModal(t,a,i){
+inputModal.style.display="flex";
+modalTitle.innerText=t;
+modalInput.value="";
+currentAction=a;
+currentIndex=i;
+}
+
+function submitModal(){
+
+let v = document.getElementById("modalInput").value;
+
+if(!v){
+showToast("Enter value ⚠️");
+return;
+}
+
+let today = document.getElementById("date").value || new Date().toISOString().split("T")[0];
+
+// DAY
+if(currentAction === "day"){
+
+if(labourList[currentIndex].attendance[today]){
+showToast("Already Added ⚠️");
+return;
+}
+
+labourList[currentIndex].attendance[today] = parseFloat(v);
+showToast("Day Added ✅");
+}
+
+// OT
+if(currentAction === "ot"){
+labourList[currentIndex].overtime[today] =
+(labourList[currentIndex].overtime[today] || 0) + parseInt(v);
+
+showToast("OT Added ⏱️");
+}
+
+// PAY 🔥 FIXED
+if(currentAction === "pay"){
+labourList[currentIndex].paid += parseInt(v);
+
+showToast("Payment Added 💰");
+}
+
+// 🔥 SINGLE UPDATE ONLY
+updateLabour(currentIndex);
+
+document.getElementById("inputModal").style.display = "none";
+}
+function closeInputModal(){
+  document.getElementById("inputModal").style.display = "none";
+}
+
+/* ========= UPDATE ========= */
+async function updateLabour(i){
+let l=labourList[i];
+await window.updateDoc(window.doc(window.db,"labours",l.firebaseId),{
+attendance:l.attendance,
+overtime:l.overtime,
+paid:l.paid
+});
+loadData();
+}
+
+/* ========= DELETE ========= */
+async function deleteLabour(i){
+if(prompt("Pass")!=="1234")return;
+let l=labourList[i];
+await window.deleteDoc(window.doc(window.db,"labours",l.firebaseId));
+loadData();
+showToast("Deleted ✅");
+}
+
+
+/* ========= DETAIL ========= */
+function showDetails(i){
+let l=labourList[i];
+
+modalName.innerText=l.id+" | "+l.name;
+modalSite.innerText=l.site;
+
+modalAttendance.innerHTML=Object.entries(l.attendance).map(([d,v])=>`${d} → ${v}`).join("<br>");
+modalOT.innerHTML=Object.entries(l.overtime).map(([d,v])=>`${d} → ${v}h`).join("<br>");
+
+detailModal.style.display="flex";
+}
+
+function closeModal(){
+detailModal.style.display="none";
+}
+
+/* ========= DOWNLOAD ========= */
+function downloadSlip(){
+let txt=`${modalName.innerText}
+Site: ${modalSite.innerText}
+
+Attendance:
+${modalAttendance.innerText}
+
+OT:
+${modalOT.innerText}`;
+
+let blob=new Blob([txt],{type:"text/plain"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="slip.txt";
+a.click();
+}
+
+/* ========= SEARCH ========= */
+function searchLabour(){
+let v=search.value.toLowerCase();
+document.querySelectorAll("#tableBody tr").forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
+});
+}
+
+/* ========= SHOW ========= */
+function showData(){
+let t=tableBody;
+t.innerHTML="";
+
+let ts=0,tp=0,pend=0;
+
+labourList.forEach((l,i)=>{
+
+let days=Object.values(l.attendance).reduce((a,b)=>a+b,0);
+let base=days*l.rate;
+
+let ot=0;
+for(let d in l.overtime){
+ot+=(l.rate/8)*l.overtime[d];
+}
+
+let total=base+ot;
+let p=total-l.paid;
+
+ts+=total;
+tp+=l.paid;
+pend+=p;
+
+t.innerHTML+=`
+<tr onclick="showDetails(${i})">
+<td>${l.id}</td>
+<td>${l.name}</td>
+<td>${l.site}</td>
+<td>${days}</td>
+<td>${Math.round(total)}</td>
+<td>${l.paid}</td>
+<td>${Math.round(p)}</td>
+<td>
+<button onclick="event.stopPropagation();openModal('Day','day',${i})">+Day</button>
+<button onclick="event.stopPropagation();openModal('OT','ot',${i})">OT</button>
+<button onclick="event.stopPropagation();openModal('Enter Payment Amount','pay',${i})">Pay</button>
+<button onclick="event.stopPropagation();deleteLabour(${i})">Delete</button>
+</td>
+</tr>`;
+});
+
+totalSalary.innerText=Math.round(ts);
+totalPaid.innerText=tp;
+totalPending.innerText=Math.round(pend);
+}
+
+/* ========= ELEMENTS ========= */
+let nameInput=document.getElementById("name");
+let rateInput=document.getElementById("rate");
+let typeInput=document.getElementById("type");
+let siteInput=document.getElementById("site");
+let tableBody=document.getElementById("tableBody");
+
+</script>
+ <a href="home.html">Home Page</a>
+</body>
+</html>
