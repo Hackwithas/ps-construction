@@ -3,33 +3,188 @@
 <html>
 <head>
   <title>PS Construction Login</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: url("background.png") no-repeat center center/cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* LOGIN BOX */
+.login-box {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+  width: 320px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.login-box h1 { margin-bottom: 5px; }
+.login-box h3 { color: gray; }
+
+input {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+  width: 90%;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 10px;
+  width: 100%;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover { background: #0056b3; }
+
+a { font-size: small; }
+
+/* LOGIN ROW */
+.login-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:15px;
+}
+
+.login-row select{
+  padding:6px;
+}
+
+/* TOAST */
+#toast {
+  position: fixed;
+  top: 20px;
+  background:black;
+  color:white;
+  padding:10px;
+  display:none;
+  border-radius:10px;
+}
+</style>
+
 </head>
+
 <body>
 
 <div class="login-box">
 
   <h1>PS Construction</h1>
-  <h3>Admin Login</h3>
+
+  <div class="login-row">
+    <h3>Login</h3>
+    <select id="role">
+      <option value="admin">Admin</option>
+      <option value="labour">Worker</option>
+    </select>
+  </div>
 
   <input type="text" id="username" placeholder="Enter Username">
   <input type="password" id="password" placeholder="Enter Password">
 
-<button onclick="login()">Login</button>
+<button type="button" onclick="login()">Login</button>
 
- <a href="home.html">Home page</a>
+<a href="index.html">Home page</a>
+
 </div>
 
-<script src="login.js"></script>
+<div id="toast"></div>
 
-<div id="toast" style="
-position:fixed;
-top: 25px;
-background:black;
-color:white;
-padding:10px;
-display: none;
-">
-</div>
+<script>
+
+/* TOAST */
+function showToast(msg){
+  let t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
+  setTimeout(()=>t.style.display="none",2000);
+}
+
+/* LOGIN */
+async function login(){
+
+let role = document.getElementById("role").value;
+let username = document.getElementById("username").value;
+let password = document.getElementById("password").value;
+
+/* ADMIN LOGIN */
+if(role === "admin"){
+
+  if(username === "admin" && password === "1234"){
+
+    showToast("Admin Login ✅");
+
+    // 🔥 redirect
+    setTimeout(()=>{
+      window.location.href = "dashboard.html";
+    },800);
+
+  } else {
+    showToast("Wrong Admin Login ❌");
+  }
+
+  return;
+}
+
+/* LABOUR LOGIN */
+if(role === "labour"){
+
+const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+const { getFirestore, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+const firebaseConfig = {
+apiKey: "AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
+authDomain: "ps-construction-tech.firebaseapp.com",
+projectId: "ps-construction-tech"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let snapshot = await getDocs(collection(db, "labours"));
+
+let found = false;
+
+snapshot.forEach(doc=>{
+let l = doc.data();
+
+if(l.id === username){
+
+found = true;
+
+localStorage.setItem("labourId", l.id);
+
+showToast("Labour Login ✅");
+
+setTimeout(()=>{
+  window.location.href = "labour-dashboard.html";
+},800);
+
+}
+
+});
+
+if(!found){
+showToast("Wrong Labour Login ❌");
+}
+
+}
+
+}
+
+</script>
+
 </body>
 </html>
