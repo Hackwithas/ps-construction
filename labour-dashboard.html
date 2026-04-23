@@ -2,30 +2,94 @@
 
 <html>
 <head>
-<title>My Dashboard</title>
+<title>Worker Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+
 body{
-font-family:Arial;
-background:#0f172a;
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f172a,#1e293b);
 color:white;
-padding:20px;
+transition:0.3s;
 }
 
-.card{
-background:#1e293b;
+/* LIGHT MODE */
+.light{
+background:#f5f5f5;
+color:black;
+}
+.light .card{background:white;color:black;}
+.light .header{background:#fff;color:black;}
+.light .stat{background:#eee;}
+
+/* HEADER */
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
 padding:15px;
-border-radius:10px;
-margin-bottom:10px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(10px);
 }
 
-button{
+/* CONTAINER */
+.container{padding:20px;}
+
+/* CARD */
+.card{
+background:rgba(255,255,255,0.05);
+padding:20px;
+border-radius:15px;
+box-shadow:0 5px 20px rgba(0,0,0,0.4);
+margin-bottom:15px;
+animation:fadeIn 0.6s ease;
+}
+
+/* GRID */
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+gap:10px;
+}
+
+/* STAT */
+.stat{
+background:rgba(255,255,255,0.08);
 padding:10px;
+border-radius:10px;
+text-align:center;
+}
+.stat b{font-size:18px;}
+
+/* COLORS */
+.paid{color:#22c55e;}
+.pending{color:#ef4444;}
+
+/* BUTTON */
+button{
+padding:10px 15px;
 border:none;
 border-radius:8px;
-margin-top:10px;
 cursor:pointer;
+margin:5px;
+transition:0.3s;
+}
+.btn{background:#3b82f6;color:white;}
+.btn:hover{transform:scale(1.05);}
+.btn-danger{background:#ef4444;}
+.btn-danger:hover{transform:scale(1.05);}
+
+/* ANIMATION */
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(20px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+/* MOBILE */
+@media(max-width:600px){
+.header{flex-direction:column;gap:10px;}
 }
 
 </style>
@@ -34,113 +98,159 @@ cursor:pointer;
 
 <body>
 
-<h2>👷 My Dashboard</h2>
+<!-- HEADER -->
 
-<div class="card" id="data"></div>
+<div class="header">
+<h3>👷 Worker Dashboard</h3>
 
-<button onclick="changePassword()">🔐 Change Password</button> <button onclick="logout()">🚪 Logout</button>
+<div>
+<button class="btn" onclick="toggleTheme()">🌙 Mode</button>
+<button class="btn" onclick="downloadSlip()">📄 Slip</button>
+<button class="btn-danger" onclick="logout()">Logout</button>
+</div>
+</div>
 
-<!-- ================= FIREBASE ================= -->
+<div class="container">
+
+<!-- SUMMARY -->
+
+<div class="card">
+<h3>📊 Summary</h3>
+<div class="grid">
+<div class="stat">Days<br><b id="sDays">0</b></div>
+<div class="stat">Salary<br><b id="sSalary">0</b></div>
+<div class="stat paid">Paid<br><b id="sPaid">0</b></div>
+<div class="stat pending">Pending<br><b id="sPending">0</b></div>
+</div>
+</div>
+
+<!-- MAIN DATA -->
+
+<div class="card" id="data">Loading...</div>
+
+</div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, updateDoc, doc } 
+import { getFirestore, collection, getDocs } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
-  authDomain: "ps-construction-tech.firebaseapp.com",
-  projectId: "ps-construction-tech"
+apiKey:"AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
+authDomain:"ps-construction-tech.firebaseapp.com",
+projectId:"ps-construction-tech"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 🔥 GET CURRENT USER ID
 let labourId = localStorage.getItem("labourId");
-
-let currentDocId = null;
 let user = null;
 
-// 🔥 LOAD DATA
 async function loadUser(){
 
-let snapshot = await getDocs(collection(db, "labours"));
+let snapshot = await getDocs(collection(db,"labours"));
 
-snapshot.forEach(docSnap=>{
-  let data = docSnap.data();
-
-  if(data.id === labourId){
-    user = data;
-    currentDocId = docSnap.id;
-  }
+snapshot.forEach(d=>{
+let data=d.data();
+if(data.id===labourId){
+user=data;
+}
 });
 
 if(!user){
-  alert("User not found ❌");
-  return;
+document.getElementById("data").innerHTML="⚠️ No data found";
+return;
 }
 
-// 🔥 CALCULATE
-let days = Object.values(user.attendance || {}).reduce((a,b)=>a+b,0);
+// CALCULATION
+let days = Object.values(user.attendance||{}).reduce((a,b)=>a+b,0);
+let base = days*user.rate;
 
-let base = days * user.rate;
-
-let ot = 0;
+let ot=0;
 for(let d in user.overtime){
-  ot += (user.rate/8) * user.overtime[d];
+ot+=(user.rate/8)*user.overtime[d];
 }
 
-let total = base + ot;
+let total = base+ot;
 
-// 🔥 SHOW DATA
-document.getElementById("data").innerHTML = `
-<b>ID:</b> ${user.id}<br>
-<b>Name:</b> ${user.name}<br>
-<b>Site:</b> ${user.site}<br><br>
+// SUMMARY UPDATE
+document.getElementById("sDays").innerText = days;
+document.getElementById("sSalary").innerText = "₹"+Math.round(total);
+document.getElementById("sPaid").innerText = "₹"+user.paid;
+document.getElementById("sPending").innerText = "₹"+Math.round(total-user.paid);
 
-<b>Total Days:</b> ${days}<br>
-<b>Total Salary:</b> ₹${Math.round(total)}<br>
-<b>Paid:</b> ₹${user.paid}<br>
-<b>Pending:</b> ₹${Math.round(total - user.paid)}<br><br>
+window.total = total;
 
-<b>Attendance:</b><br>
-${Object.entries(user.attendance).map(([d,v])=>d+" → "+v).join("<br>") || "No data"}
+// MAIN DATA
+document.getElementById("data").innerHTML=`
+
+<h3>${user.name}</h3>
+<p>📍 ${user.site}</p>
+
+<h4>📅 Attendance</h4>
+${Object.entries(user.attendance||{}).map(([d,v])=>d+" → "+v).join("<br>") || "No data"}
 
 <br><br>
 
-<b>Overtime:</b><br>
-${Object.entries(user.overtime).map(([d,v])=>d+" → "+v+" hrs").join("<br>") || "No OT"}
+<h4>⏱️ Overtime</h4>
+${Object.entries(user.overtime||{}).map(([d,v])=>d+" → "+v+" hrs").join("<br>") || "No OT"}
+
 `;
 
 }
 
 loadUser();
 
-// 🔐 CHANGE PASSWORD
-window.changePassword = async function(){
+// 📄 SLIP
+window.downloadSlip = function(){
 
-let newPass = prompt("Enter new password");
+let text = `
+==============================
+      PS CONSTRUCTION
+==============================
 
-if(!newPass) return;
+Name       : ${user.name}
+ID         : ${user.id}
+Site       : ${user.site}
 
-await updateDoc(doc(db, "labours", currentDocId), {
-  password: newPass
-});
+------------------------------
+Total Salary : ₹${Math.round(total)}
+Paid         : ₹${user.paid}
+Pending      : ₹${Math.round(total-user.paid)}
+------------------------------
 
-alert("Password Updated ✅");
+Generated on: ${new Date().toLocaleDateString()}
+`;
+
+let blob=new Blob([text],{type:"text/plain"});
+let a=document.createElement("a");
+
+a.href=URL.createObjectURL(blob);
+a.download=user.name+"-slip.txt";
+a.click();
 
 };
 
+// 🌙 THEME
+window.toggleTheme=function(){
+document.body.classList.toggle("light");
+localStorage.setItem("theme",
+document.body.classList.contains("light")?"light":"dark");
+};
+
+if(localStorage.getItem("theme")==="light"){
+document.body.classList.add("light");
+}
+
 // 🚪 LOGOUT
-window.logout = function(){
+window.logout=function(){
 localStorage.removeItem("labourId");
-window.location.href = "login.html";
+window.location.href="login.html";
 };
 
 </script>
 
 </body>
 </html>
-
