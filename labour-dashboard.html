@@ -196,7 +196,10 @@ ${Object.entries(user.attendance||{}).map(([d,v])=>d+" → "+v).join("<br>") || 
 
 <h4>⏱️ Overtime</h4>
 ${Object.entries(user.overtime||{}).map(([d,v])=>d+" → "+v+" hrs").join("<br>") || "No OT"}
+<br><br>
 
+<h4>💰 Payments</h4>
+${Object.entries(user.payments||{}).map(([d,v])=>d+" → ₹"+v).join("<br>") || "No payments"}
 `;
 
 }
