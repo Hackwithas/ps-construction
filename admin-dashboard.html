@@ -835,6 +835,41 @@ select.form-input { cursor: pointer; }
   .stats-grid { grid-template-columns: 1fr; }
   .detail-stats { grid-template-columns: 1fr; }
 }
+#google_translate_element{
+  display: flex;
+  align-items: center;
+  max-width: 140px;
+  overflow: hidden;
+}
+
+.goog-te-gadget{
+  font-size: 0 !important;
+}
+
+.goog-te-gadget select{
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  cursor: pointer;
+}
+@media (max-width: 768px){
+  #google_translate_element{
+    max-width: 100px;
+  }
+
+  .goog-te-gadget select{
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}
+.nav-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
 </style>
 </head>
 
@@ -842,7 +877,7 @@ select.form-input { cursor: pointer; }
 
 <!-- Loading Screen -->
 <div class="loading-screen" id="loadingScreen">
-  <div class="loading-logo">Construct<span>Pro</span></div>
+  <div class="loading-logo">PS<span>Construction</span></div>
   <div class="loader"></div>
   <p style="color:var(--text2);font-size:13px;">Loading your dashboard…</p>
 </div>
@@ -931,6 +966,8 @@ select.form-input { cursor: pointer; }
         <input type="text" id="globalSearch" placeholder="Search labourers…" oninput="handleGlobalSearch(this.value)">
       </div>
       <div class="topbar-actions">
+        <div>
+    <div id="google_translate_element"></div></div>
         <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme">
           <i class="fas fa-moon" id="themeIcon"></i>
         </button>
@@ -2321,5 +2358,16 @@ function emptyRow(cols, msg) {
   return `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-state-icon"><i class="fas fa-inbox"></i></div><div class="empty-state-title">${msg}</div><div class="empty-state-sub">Add some records to get started</div></div></td></tr>`;
 }
 </script>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'en,hi',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+  }, 'google_translate_element');
+}
+</script>
+
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
