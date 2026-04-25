@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PS Construction — Worker Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<style>
+/* ─── CSS VARIABLES ─── */
+:root {
+  --bg: #f0f4f8;
+  --bg2: #e8edf3;
+  --surface: rgba(255,255,255,0.85);
+  --surface2: rgba(255,255,255,0.6);
+  --glass: rgba(255,255,255,0.72);
+  --glass-border: rgba(255,255,255,0.9);
+  --sidebar-bg: rgba(15,23,42,0.97);
+  --sidebar-text: rgba(255,255,255,0.75);
+  --sidebar-active: #f97316;
+  --text: #0f172a;
+  --text2: #64748b;
+  --text3: #94a3b8;
+  --accent: #f97316;
+  --accent2: #3b82f6;
+  --accent3: #10b981;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --border: rgba(148,163,184,0.2);
+  --shadow: 0 4px 24px rgba(15,23,42,0.08);
+  --shadow-lg: 0 16px 48px rgba(15,23,42,0.14);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+  --sidebar-w: 260px;
+}
+[data-theme="dark"] {
+  --bg: #0a0f1e;
+  --bg2: #0f172a;
+  --surface: rgba(15,23,42,0.9);
+  --surface2: rgba(30,41,59,0.7);
+  --glass: rgba(15,23,42,0.85);
+  --glass-border: rgba(255,255,255,0.08);
+  --sidebar-bg: rgba(5,8,16,0.98);
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --border: rgba(255,255,255,0.07);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+/* ─── RESET & BASE ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: -40%;
+  right: -20%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -30%;
+  left: 10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+[data-theme="dark"] body::before { background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%); }
+[data-theme="dark"] body::after { background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%); }
+
+/* ─── LAYOUT ─── */
+#app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform var(--transition), width var(--transition);
+  overflow: hidden;
+}
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.6), transparent);
+}
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar-logo .logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+}
+.logo-text { font-family: 'Syne', sans-serif; color: #fff; }
+.logo-text .brand { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.logo-text .tagline { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; }
+
+.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.nav-section-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  padding: 12px 8px 6px;
+  font-weight: 600;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition);
+  margin-bottom: 2px;
+  position: relative;
+  white-space: nowrap;
+}
+.nav-item i { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(249,115,22,0.25), rgba(249,115,22,0.1));
+  color: #fb923c;
+  border: 1px solid rgba(249,115,22,0.2);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: #f97316;
+  border-radius: 0 2px 2px 0;
+}
+
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ─── MAIN CONTENT ─── */
+.main-content {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left var(--transition);
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  padding: 0 28px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border);
+  transition: background var(--transition);
+}
+.topbar-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; flex: 0 0 auto; }
+.topbar-search {
+  flex: 1;
+  max-width: 360px;
+  position: relative;
+}
+.topbar-search input {
+  width: 100%;
+  height: 38px;
+  padding: 0 16px 0 40px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: all var(--transition);
+}
+.topbar-search input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
+}
+.topbar-search i {
+  position: absolute;
+  left: 13px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  font-size: 13px;
+}
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  transition: all var(--transition);
+}
+.icon-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); transform: translateY(-1px); }
+.theme-toggle { position: relative; }
+
+.avatar {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f97316, #3b82f6);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 14px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+}
+
+.menu-toggle {
+  display: none;
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+/* ─── PAGE CONTENT ─── */
+.page { display: none; padding: 28px; animation: fadeInUp 0.4s ease; }
+.page.active { display: block; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── STATS CARDS ─── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  transition: all var(--transition);
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: var(--card-color, rgba(249,115,22,0.08));
+  transform: translate(30%, -30%);
+  transition: transform var(--transition);
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.stat-card:hover::before { transform: translate(20%, -20%) scale(1.1); }
+.stat-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--card-color, rgba(249,115,22,0.12));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  color: var(--card-accent, #f97316);
+  margin-bottom: 14px;
+}
+.stat-card-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.stat-card-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+.stat-card-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+/* ─── SECTION HEADER ─── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+.section-actions { display: flex; gap: 10px; align-items: center; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  top: 50%; left: 50%;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s, opacity 0.4s;
+  opacity: 0;
+}
+.btn:active::after { width: 200px; height: 200px; opacity: 0; }
+.btn-primary { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; box-shadow: 0 4px 14px rgba(249,115,22,0.35); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249,115,22,0.45); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg); border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.btn-danger:hover { background: #ef4444; color: white; }
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+.btn-icon-only { padding: 8px; width: 34px; height: 34px; justify-content: center; }
+
+/* ─── TABLE ─── */
+.table-wrap {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.table-controls {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.table-search {
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+  position: relative;
+}
+.table-search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: all var(--transition);
+}
+.table-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+.table-search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 12px; }
+.table-select {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  cursor: pointer;
+}
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 700px; }
+thead { position: sticky; top: 0; background: var(--bg2); z-index: 2; }
+thead th {
+  padding: 13px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text2);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition);
+  white-space: nowrap;
+}
+thead th:hover { color: var(--accent); }
+thead th .sort-icon { margin-left: 4px; font-size: 10px; opacity: 0.5; }
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(249,115,22,0.04); }
+tbody td { padding: 13px 16px; font-size: 13.5px; vertical-align: middle; }
+
+/* ─── BADGES ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-blue { background: rgba(59,130,246,0.12); color: #3b82f6; }
+.badge-green { background: rgba(16,185,129,0.12); color: #10b981; }
+.badge-orange { background: rgba(249,115,22,0.12); color: #f97316; }
+.badge-red { background: rgba(239,68,68,0.12); color: #ef4444; }
+.badge-purple { background: rgba(139,92,246,0.12); color: #8b5cf6; }
+
+/* ─── MODALS ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.open { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  display: flex;
+  flex-direction: column;
+}
+.modal-lg { max-width: 680px; }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all var(--transition);
+}
+.modal-close:hover { background: #ef4444; color: white; }
+.modal-body { padding: 22px 24px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0; }
+
+/* ─── FORM ─── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all var(--transition);
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); background: var(--surface); }
+.form-input::placeholder { color: var(--text3); }
+select.form-input { cursor: pointer; }
+
+/* ─── DETAIL MODAL ─── */
+.detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(59,130,246,0.06));
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+.detail-avatar {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f97316, #3b82f6);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+.detail-info .name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.detail-info .meta { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+.detail-stat {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.detail-stat-val { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--accent); }
+.detail-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-section { margin-bottom: 18px; }
+.detail-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.detail-list { display: flex; flex-direction: column; gap: 6px; }
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.detail-row:hover { background: var(--bg2); }
+.detail-row .dr-date { color: var(--text2); font-size: 12px; }
+.detail-row .dr-val { font-weight: 600; color: var(--text); }
+.detail-row .dr-val.green { color: var(--accent3); }
+
+/* ─── TOAST ─── */
+.toast-wrap {
+  position: fixed;
+  top: 80px; right: 20px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 360px;
+  animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: all;
+  font-size: 14px;
+  font-weight: 500;
+}
+.toast.removing { animation: toastOut 0.3s ease forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(60px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(60px) scale(0.9); } }
+.toast-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.toast.success .toast-icon { background: rgba(16,185,129,0.15); color: #10b981; }
+.toast.error .toast-icon { background: rgba(239,68,68,0.15); color: #ef4444; }
+.toast.info .toast-icon { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.toast.warn .toast-icon { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+/* ─── LOADING ─── */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  gap: 20px;
+  transition: opacity 0.4s, visibility 0.4s;
+}
+.loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loading-logo { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
+.loading-logo span { color: var(--accent); }
+.loader {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 14px;
+  text-align: center;
+}
+.empty-state-icon { font-size: 48px; opacity: 0.25; }
+.empty-state-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text2); }
+.empty-state-sub { font-size: 14px; color: var(--text3); max-width: 280px; }
+
+/* ─── CONFIRM DIALOG ─── */
+.confirm-modal { max-width: 380px; }
+.confirm-icon { width: 56px; height: 56px; border-radius: 16px; background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #ef4444; margin: 0 auto 16px; }
+
+/* ─── PAYMENT & ATTENDANCE MODALS ─── */
+.quick-add-row { display: flex; gap: 10px; align-items: flex-end; }
+.quick-add-row .form-group { flex: 1; }
+
+/* ─── ATTENDANCE GRID ─── */
+.att-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.att-cell {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.att-cell.present { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981; font-weight: 600; }
+.att-cell.absent { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #ef4444; }
+.att-cell:hover { transform: scale(1.04); }
+.att-cell .att-date { font-weight: 600; font-size: 13px; }
+.att-cell .att-status { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* ─── LOGIN PAGE ─── */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg);
+}
+.login-box {
+  background: var(--surface);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 44px 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp 0.4s ease;
+}
+.login-header { text-align: center; margin-bottom: 32px; }
+.login-logo-icon {
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; color: white;
+  margin: 0 auto 14px;
+  box-shadow: 0 8px 24px rgba(249,115,22,0.4);
+}
+.login-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+.login-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.login-form { display: flex; flex-direction: column; gap: 16px; }
+.btn-login-submit {
+  height: 46px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.4);
+  margin-top: 4px;
+}
+.btn-login-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249,115,22,0.5); }
+.login-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 8px;
+  background: var(--bg2);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+/* ─── SCREEN POPUP ─── */
+@keyframes popupIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media print {
+  .slip-only { display: block !important; }
+  body > *:not(#slip-print) { display: none !important; }
+  #slip-print { display: block !important; }
+}
+#slip-print {
+  display: none;
+  padding: 40px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ─── ANIMATIONS ─── */
+.animate-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
+.animate-in:nth-child(1) { animation-delay: 0.05s; }
+.animate-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-in:nth-child(3) { animation-delay: 0.15s; }
+.animate-in:nth-child(4) { animation-delay: 0.2s; }
+
+/* ─── OVERLAY ─── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+@media (max-width: 900px) {
+  .sidebar.open ~ #sidebarOverlay,
+  .sidebar-overlay.active { display: block; }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: block; }
+  .main-content { margin-left: 0; }
+  .menu-toggle { display: flex; }
+  .page { padding: 16px; }
+  .topbar { padding: 0 16px; }
+}
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .modal { border-radius: 16px; }
+  .detail-stats { grid-template-columns: 1fr 1fr 1fr; }
+}
+@media (max-width: 420px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .detail-stats { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Loading Screen -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">Construct<span>Pro</span></div>
+  <div class="loader"></div>
+  <p style="color:var(--text2);font-size:13px;">Loading your dashboard…</p>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="adminLoginPage" class="login-wrap">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-logo-icon"><i class="fas fa-hard-hat"></i></div>
+      <div class="login-title">PS Construction Admin</div>
+      <div class="login-sub">Labour Management System</div>
+    </div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label">Username / Email</label>
+        <input type="text" class="form-input" id="adminEmail" placeholder="admin@psconstruction.com" >
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="adminPass" placeholder="Enter password"  onkeydown="if(event.key==='Enter')doAdminLogin()">
+      </div>
+      <button class="btn-login-submit" onclick="doAdminLogin()">
+        <i class="fas fa-sign-in-alt" style="margin-right:8px"></i> Sign In to Dashboard
+      </button>
+    </div>
+ <div class="login-hint">Use your authorized admin Firebase credentials</div>
+  </div>
+</div>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- App Container -->
+<div id="adminApp" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon"><i class="fas fa-hard-hat"></i></div>
+        <div class="logo-text">
+          <div class="brand">PS Construction</div>
+          <div class="tagline">Worker Management</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <i class="fas fa-chart-line"></i><span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="showPage('labours')">
+        <i class="fas fa-users"></i><span>Labour Registry</span>
+      </div>
+      <div class="nav-section-label" style="margin-top:8px;">Operations</div>
+      <div class="nav-item" onclick="showPage('attendance')">
+        <i class="fas fa-calendar-check"></i><span>Attendance</span>
+      </div>
+      <div class="nav-item" onclick="showPage('overtime')">
+        <i class="fas fa-clock"></i><span>Overtime</span>
+      </div>
+      <div class="nav-item" onclick="showPage('payments')">
+        <i class="fas fa-wallet"></i><span>Payments</span>
+      </div>
+      <div class="nav-section-label" style="margin-top:8px;">Reports</div>
+      <div class="nav-item" onclick="showPage('salary')">
+        <i class="fas fa-file-invoice-dollar"></i><span>Salary Report</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="logout()" style="color:rgba(239,68,68,0.8);">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <div class="topbar-title" id="pageTitle">Dashboard</div>
+      <div class="topbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="globalSearch" placeholder="Search labourers…" oninput="handleGlobalSearch(this.value)">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+          <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+        <button class="icon-btn" onclick="refreshData()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+        <div class="avatar" title="Admin">PS</div>
+      </div>
+    </header>
+
+    <!-- ── PAGE: DASHBOARD ── -->
+    <section class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card animate-in" style="--card-color:rgba(249,115,22,0.1);--card-accent:#f97316;">
+          <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-card-label">Total Workers</div>
+          <div class="stat-card-value" id="statWorkers">0</div>
+          <div class="stat-card-sub">Active on all sites</div>
+        </div>
+        <div class="stat-card animate-in" style="--card-color:rgba(59,130,246,0.1);--card-accent:#3b82f6;">
+          <div class="stat-card-icon"><i class="fas fa-rupee-sign"></i></div>
+          <div class="stat-card-label">Total Salary</div>
+          <div class="stat-card-value" id="statSalary">₹0</div>
+          <div class="stat-card-sub">Gross payable</div>
+        </div>
+        <div class="stat-card animate-in" style="--card-color:rgba(16,185,129,0.1);--card-accent:#10b981;">
+          <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-card-label">Total Paid</div>
+          <div class="stat-card-value" id="statPaid">₹0</div>
+          <div class="stat-card-sub">Payments made</div>
+        </div>
+        <div class="stat-card animate-in" style="--card-color:rgba(239,68,68,0.1);--card-accent:#ef4444;">
+          <div class="stat-card-icon"><i class="fas fa-hourglass-half"></i></div>
+          <div class="stat-card-label">Pending</div>
+          <div class="stat-card-value" id="statPending">₹0</div>
+          <div class="stat-card-sub">Yet to be paid</div>
+        </div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">Recent Workers</div>
+        <div class="section-actions">
+          <button class="btn btn-primary btn-sm" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add Labour
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Name</th><th>Type</th><th>Site</th><th>Daily Rate</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="dashboardTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAGE: LABOUR REGISTRY ── -->
+    <section class="page" id="page-labours">
+      <div class="section-header">
+        <div class="section-title">Labour Registry</div>
+        <div class="section-actions">
+          <button class="btn btn-primary btn-sm" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add Labour
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-controls">
+          <div class="table-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="labourSearch" placeholder="Search…" oninput="filterLabourTable(this.value)">
+          </div>
+          <select class="table-select" id="siteFilter" onchange="filterLabourTable()">
+            <option value="">All Sites</option>
+          </select>
+          <select class="table-select" id="typeFilter" onchange="filterLabourTable()">
+            <option value="">All Types</option>
+          </select>
+          <select class="table-select" id="sortBy" onchange="filterLabourTable()">
+            <option value="name">Sort: Name</option>
+            <option value="rate">Sort: Rate</option>
+            <option value="site">Sort: Site</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Worker ID</th>
+              <th onclick="setSortKey('name')">Name <span class="sort-icon">↕</span></th>
+              <th>Phone</th>
+              <th>Type</th>
+              <th onclick="setSortKey('site')">Site <span class="sort-icon">↕</span></th>
+              <th onclick="setSortKey('rate')">Daily Rate <span class="sort-icon">↕</span></th>
+              <th>Added</th>
+              <th>Actions</th>
+            </tr></thead>
+            <tbody id="labourTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAGE: ATTENDANCE ── -->
+    <section class="page" id="page-attendance">
+      <div class="section-header">
+        <div class="section-title">Attendance Tracking</div>
+        <div class="section-actions">
+          <input type="date" class="form-input" id="attDate" style="width:160px;height:38px;" value="">
+          <button class="btn btn-primary btn-sm" onclick="openBulkAttModal()">
+            <i class="fas fa-calendar-plus"></i> Mark Attendance
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Worker ID</th><th>Worker Name</th><th>Site</th><th>Date</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="attendanceTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAGE: OVERTIME ── -->
+    <section class="page" id="page-overtime">
+      <div class="section-header">
+        <div class="section-title">Overtime Management</div>
+        <div class="section-actions">
+          <button class="btn btn-primary btn-sm" onclick="openOTModal()">
+            <i class="fas fa-plus"></i> Add Overtime
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Worker</th><th>Date</th><th>OT Hours</th><th>OT Rate</th><th>OT Amount</th><th>Action</th>
+            </tr></thead>
+            <tbody id="overtimeTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAGE: PAYMENTS ── -->
+    <section class="page" id="page-payments">
+      <div class="section-header">
+        <div class="section-title">Payment Management</div>
+        <div class="section-actions">
+          <button class="btn btn-primary btn-sm" onclick="openPaymentModal()">
+            <i class="fas fa-plus"></i> Record Payment
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Worker</th><th>Payment Date</th><th>Amount</th><th>Method</th><th>Note</th><th>Action</th>
+            </tr></thead>
+            <tbody id="paymentTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAGE: SALARY REPORT ── -->
+    <section class="page" id="page-salary">
+      <div class="section-header">
+        <div class="section-title">Salary Report</div>
+        <div class="section-actions">
+          <button class="btn btn-secondary btn-sm" onclick="printAllSlips()">
+            <i class="fas fa-print"></i> Print Report
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Worker</th><th>Days Present</th><th>Base Salary</th><th>OT Amount</th>
+              <th>Total Salary</th><th>Paid</th><th>Pending</th><th>Extra Payment</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="salaryTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end main-content -->
+
+<!-- Modals inside adminApp -->
+
+<script>
+// ─── ADMIN AUTH ───
+// DELETE PIN for labour deletion
+const DELETE_PIN = '1234';
+
+// Inactivity logout (5 minutes)
+let adminInactivityTimer = null;
+const ADMIN_INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+
+function resetAdminInactivity() {
+  if (!sessionStorage.getItem('admin_logged_in')) return;
+  clearTimeout(adminInactivityTimer);
+  adminInactivityTimer = setTimeout(() => {
+    showScreenPopup('⏱️ Session Expired', 'Aap 5 minute se inactive hain. Logout ho gaye.', 'warn', () => {
+      doActualLogout();
+    });
+  }, ADMIN_INACTIVITY_LIMIT);
+}
+
+function startAdminInactivityTimer() {
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt =>
+    document.addEventListener(evt, resetAdminInactivity, { passive: true })
+  );
+  resetAdminInactivity();
+}
+
+function stopAdminInactivityTimer() {
+  clearTimeout(adminInactivityTimer);
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt =>
+    document.removeEventListener(evt, resetAdminInactivity)
+  );
+}
+function doAdminLogin() {
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass  = document.getElementById('adminPass').value;
+
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(() => {
+      sessionStorage.setItem('admin_logged_in', '1');
+
+      document.getElementById('adminLoginPage').style.display = 'none';
+      document.getElementById('adminApp').style.display = 'block';
+
+      startAdminInactivityTimer();
+
+      initAdminApp().then(() => {
+        showToast('Welcome Admin! 👷', 'success');
+      });
+    })
+    .catch((error) => {
+      console.error(error);
+      showToast('Invalid Firebase credentials', 'error');
+    });
+}
+function doActualLogout() {
+  sessionStorage.removeItem('admin_logged_in');
+  stopAdminInactivityTimer();
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('adminLoginPage').style.display = 'flex';
+  document.getElementById('adminEmail').value = '';
+  document.getElementById('adminPass').value = '';
+}
+
+// Session is cleared on page load via the main DOMContentLoaded handler
+
+// ─── SCREEN POPUP (replaces alert()) ───
+function showScreenPopup(title, msg, type = 'info', callback = null) {
+  const existing = document.getElementById('screenPopupOverlay');
+  if (existing) existing.remove();
+  const colors = { success:'#10b981', error:'#ef4444', warn:'#f59e0b', info:'#3b82f6' };
+  const icons = { success:'fa-check-circle', error:'fa-times-circle', warn:'fa-exclamation-triangle', info:'fa-info-circle' };
+  const overlay = document.createElement('div');
+  overlay.id = 'screenPopupOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease';
+  const c = colors[type] || colors.info;
+  const ic = icons[type] || icons.info;
+  overlay.innerHTML = `<div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);text-align:center">
+    <div style="width:60px;height:60px;border-radius:16px;background:${c}22;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px;color:${c}">
+      <i class="fas ${ic}"></i>
+    </div>
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:10px">${esc(title)}</div>
+    <div style="color:var(--text2);font-size:14px;margin-bottom:24px;line-height:1.6">${msg}</div>
+    <button onclick="document.getElementById('screenPopupOverlay').remove();if(window._popupCb){window._popupCb();window._popupCb=null;}" style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;border-radius:10px;padding:11px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">OK</button>
+  </div>`;
+  window._popupCb = callback || null;
+  document.body.appendChild(overlay);
+}
+
+// ─── PIN INPUT POPUP ───
+function showPinPopup(title, msg, onConfirm) {
+  const existing = document.getElementById('pinPopupOverlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'pinPopupOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease';
+  overlay.innerHTML = `<div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:20px;padding:32px 28px;max-width:400px;width:100%;box-shadow:var(--shadow-lg);animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);text-align:center">
+    <div style="width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;color:#ef4444"><i class="fas fa-lock"></i></div>
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px">${esc(title)}</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:18px">${esc(msg)}</div>
+    <input id="pinPopupInput" type="password" maxlength="10" placeholder="Delete PIN daalen" style="width:100%;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:4px;margin-bottom:16px" oninput="this.style.borderColor=''" onkeydown="if(event.key==='Enter')document.getElementById('pinConfirmBtn').click()">
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="document.getElementById('pinPopupOverlay').remove()" style="flex:1;height:40px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+      <button id="pinConfirmBtn" onclick="
+        var v=document.getElementById('pinPopupInput').value;
+        if(v===window._pinExpected){document.getElementById('pinPopupOverlay').remove();if(window._pinCb){window._pinCb();window._pinCb=null;}}
+        else{document.getElementById('pinPopupInput').style.borderColor='#ef4444';document.getElementById('pinPopupInput').value='';document.getElementById('pinPopupInput').placeholder='Galat PIN!';}
+      " style="flex:1;height:40px;border-radius:9px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;font-size:13px;font-weight:600;cursor:pointer"><i class="fas fa-trash"></i> Delete</button>
+    </div>
+  </div>`;
+  window._pinExpected = DELETE_PIN;
+  window._pinCb = onConfirm;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('pinPopupInput')?.focus(), 100);
+}
+</script>
+
+
+
+<!-- Add/Edit Labour Modal -->
+<div class="modal-overlay" id="labourModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="labourModalTitle">Add Labour</div>
+      <button class="modal-close" onclick="closeModal('labourModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="labourName" placeholder="Enter full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Labour Type</label>
+          <select class="form-input" id="labourType">
+            <option value="">Select type</option>
+            <option>Mason</option><option>Carpenter</option><option>Electrician</option>
+            <option>Plumber</option><option>Painter</option><option>Helper</option>
+            <option>Welder</option><option>Supervisor</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Daily Rate (₹)</label>
+          <input type="number" class="form-input" id="labourRate" placeholder="e.g. 600">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Site Name</label>
+          <input type="text" class="form-input" id="labourSite" placeholder="Site / Project name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Join Date</label>
+          <input type="date" class="form-input" id="labourDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="labourPhone" placeholder="Optional">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('labourModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLabour()">
+        <i class="fas fa-save"></i> Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">Worker Details</div>
+      <button class="modal-close" onclick="closeModal('detailModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="detailModalBody">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button>
+      <button class="btn btn-primary" id="printSlipBtn" onclick="printSlip()">
+        <i class="fas fa-print"></i> Salary Slip
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance Modal -->
+<div class="modal-overlay" id="attendanceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Mark Attendance</div>
+      <button class="modal-close" onclick="closeModal('attendanceModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Worker ID se Select Karen</label>
+          <select class="form-input" id="attWorker"><option value="">-- ID se Worker Chunen --</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="attModalDate">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Status</label>
+          <select class="form-input" id="attStatus">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Half Day">Half Day</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('attendanceModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAttendance()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Overtime Modal -->
+<div class="modal-overlay" id="overtimeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Record Overtime</div>
+      <button class="modal-close" onclick="closeModal('overtimeModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Worker</label>
+          <select class="form-input" id="otWorker" onchange="updateOTRate()"><option value="">Select worker</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="otDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">OT Hours</label>
+          <input type="number" class="form-input" id="otHours" placeholder="e.g. 2" step="0.5" oninput="updateOTPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">OT Rate/hr (₹) <span style="font-size:10px;color:var(--text3)">(auto from salary)</span></label>
+          <input type="number" class="form-input" id="otRate" placeholder="Auto-calculated" readonly style="background:var(--bg2);color:var(--accent);font-weight:600;">
+        </div>
+        <div class="form-group full" id="otPreview" style="display:none">
+          <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px;font-size:13px;">
+            <strong>OT Amount Preview: </strong><span id="otAmtPreview" style="color:var(--accent3);font-weight:700;font-size:15px;">₹0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('overtimeModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOT()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Record Payment</div>
+      <button class="modal-close" onclick="closeModal('paymentModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Worker</label>
+          <select class="form-input" id="payWorker"><option value="">Select worker</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Date</label>
+          <input type="date" class="form-input" id="payDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount (₹)</label>
+          <input type="number" class="form-input" id="payAmount" placeholder="e.g. 5000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Method</label>
+          <select class="form-input" id="payMethod">
+            <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Note</label>
+          <input type="text" class="form-input" id="payNote" placeholder="Optional note…">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayment()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="modal-body" style="text-align:center;padding:32px 24px;">
+      <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">Confirm Delete</div>
+      <div id="confirmMsg" style="color:var(--text2);font-size:14px;margin-bottom:24px;">Are you sure you want to delete this record?</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+        <button class="btn btn-danger" onclick="executeDelete()"><i class="fas fa-trash-alt"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Salary Slip Print Area -->
+<div id="slip-print"></div>
+
+</div><!-- end adminApp -->
+
+<!-- Toast Container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ─── FIREBASE CONFIG ───
+const firebaseConfig = {
+  apiKey: "AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
+  authDomain: "ps-construction-tech.firebaseapp.com",
+  projectId: "ps-construction-tech",
+  storageBucket: "ps-construction-tech.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let db = null;
+let useLocalStorage = false;
+
+// Try Firebase init
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e) {
+  useLocalStorage = true;
+  console.warn('Firebase not configured — using localStorage fallback.');
+}
+
+// ─── LOCAL STORAGE FALLBACK ───
+const LS = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; }},
+  set: (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}},
+};
+
+// ─── DATA STATE ───
+let labours = [], attendance = [], overtime = [], payments = [];
+let editingId = null, deleteCallback = null, currentDetailLabour = null;
+let sortKey = 'name', sortAsc = true;
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', async () => {
+  // Always require fresh login on page load
+  sessionStorage.removeItem('admin_logged_in');
+
+  // Set theme
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+
+  // Hide loading, show login
+  document.getElementById('loadingScreen').classList.add('hidden');
+  document.getElementById('adminLoginPage').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+});
+
+// Called after successful login to initialize the app
+async function initAdminApp() {
+  // Set today's date defaults
+  const today = new Date().toISOString().split('T')[0];
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+  setVal('attDate', today);
+  setVal('attModalDate', today);
+  setVal('otDate', today);
+  setVal('payDate', today);
+  setVal('labourDate', today);
+
+  await loadAllData();
+  renderAll();
+}
+
+// ─── DATA LOADING ───
+async function loadAllData() {
+  if (useLocalStorage) {
+    labours    = LS.get('labours');
+    attendance = LS.get('attendance');
+    overtime   = LS.get('overtime');
+    payments   = LS.get('payments');
+    return;
+  }
+  try {
+    const [lSnap, aSnap, oSnap, pSnap] = await Promise.all([
+      db.collection('labours').get(),
+      db.collection('attendance').get(),
+      db.collection('overtime').get(),
+      db.collection('payments').get()
+    ]);
+    labours    = lSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    attendance = aSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    overtime   = oSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    payments   = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    useLocalStorage = true;
+    showToast('Firebase unavailable — using local storage', 'warn');
+    labours = LS.get('labours'); attendance = LS.get('attendance');
+    overtime = LS.get('overtime'); payments = LS.get('payments');
+  }
+}
+
+function saveAll() {
+  if (useLocalStorage) {
+    LS.set('labours', labours); LS.set('attendance', attendance);
+    LS.set('overtime', overtime); LS.set('payments', payments);
+  }
+}
+
+// ─── RENDER ALL ───
+function renderAll() {
+  autoFillAbsent();
+  renderStats();
+  renderDashboardTable();
+  renderLabourTable();
+  renderAttendanceTable();
+  renderOvertimeTable();
+  renderPaymentTable();
+  renderSalaryTable();
+  populateWorkerSelects();
+  populateSiteFilter();
+}
+
+// ─── AUTO FILL ABSENT ───
+// Agar kisi din attendance mark nahi hui toh wo Absent count hogi (display only, save nahi hogi)
+// Actual rendering me days count karte waqt sirf marked records use hote hain
+// Yeh function kuch nahi karta - absent sirf display ke liye auto-counted hoti hai salary me already
+// NOTE: Hum sirf present/half-day days count karte hain, baki sab absent maane jaate hain
+function autoFillAbsent() {
+  // Future: could mark absent records automatically for past dates
+  // For now absence is implied (no record = absent)
+}
+
+// ─── STATS ───
+function renderStats() {
+  const totalWorkers = labours.length;
+  let totalSalary = 0, totalPaid = 0;
+
+  labours.forEach(l => {
+    const days = attendance.filter(a => a.labourId === l.id && a.status === 'Present').length
+               + attendance.filter(a => a.labourId === l.id && a.status === 'Half Day').length * 0.5;
+    const otAmt = overtime.filter(o => o.labourId === l.id).reduce((s, o) => s + (parseFloat(o.hours)||0) * (parseFloat(o.rate)||0), 0);
+    totalSalary += days * (parseFloat(l.rate)||0) + otAmt;
+    totalPaid   += payments.filter(p => p.labourId === l.id).reduce((s, p) => s + (parseFloat(p.amount)||0), 0);
+  });
+
+  animateCount('statWorkers', totalWorkers, '', 0);
+  animateCount('statSalary', totalSalary, '₹', 0);
+  animateCount('statPaid', totalPaid, '₹', 0);
+  animateCount('statPending', Math.max(0, totalSalary - totalPaid), '₹', 0);
+}
+
+function animateCount(id, target, prefix, decimals) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = 0, duration = 800;
+  const startTime = performance.now();
+  function step(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const val = start + (target - start) * ease;
+    el.textContent = prefix + (decimals ? val.toFixed(decimals) : Math.round(val)).toLocaleString('en-IN');
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ─── DASHBOARD TABLE ───
+function renderDashboardTable() {
+  const tbody = document.getElementById('dashboardTable');
+  if (!tbody) return;
+  if (!labours.length) { tbody.innerHTML = emptyRow(6, 'No workers added yet'); return; }
+  const recent = [...labours].sort((a,b) => new Date(b.date||0) - new Date(a.date||0)).slice(0, 8);
+  tbody.innerHTML = recent.map(l => {
+    const paid = payments.filter(p => p.labourId === l.id).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+    const total = calcTotalSalary(l);
+    const pending = Math.max(0, total - paid);
+    return `<tr>
+      <td><strong style="font-weight:600">${esc(l.name)}</strong></td>
+      <td><span class="badge badge-blue">${esc(l.type||'—')}</span></td>
+      <td>${esc(l.site||'—')}</td>
+      <td>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</td>
+      <td><span class="badge ${pending > 0 ? 'badge-red' : 'badge-green'}">${pending > 0 ? 'Pending' : 'Paid'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="openDetail('${l.id}')"><i class="fas fa-eye"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── LABOUR TABLE ───
+function renderLabourTable(filter = '') {
+  const tbody = document.getElementById('labourTable');
+  if (!tbody) return;
+  const search = (filter || document.getElementById('labourSearch')?.value || '').toLowerCase();
+  const site = document.getElementById('siteFilter')?.value || '';
+  const type = document.getElementById('typeFilter')?.value || '';
+  const sort = document.getElementById('sortBy')?.value || 'name';
+
+  let list = labours.filter(l => {
+    const match = !search || l.name?.toLowerCase().includes(search) || l.site?.toLowerCase().includes(search);
+    const siteMatch = !site || l.site === site;
+    const typeMatch = !type || l.type === type;
+    return match && siteMatch && typeMatch;
+  });
+
+  list.sort((a, b) => {
+    if (sort === 'name') return (a.name||'').localeCompare(b.name||'');
+    if (sort === 'rate') return parseFloat(a.rate||0) - parseFloat(b.rate||0);
+    if (sort === 'site') return (a.site||'').localeCompare(b.site||'');
+    return 0;
+  });
+  if (!sortAsc) list.reverse();
+
+  if (!list.length) { tbody.innerHTML = emptyRow(6, 'No workers found'); return; }
+
+  tbody.innerHTML = list.map(l => `<tr>
+    <td>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="background:var(--accent);color:white;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;white-space:nowrap">${esc(l.pscId||'—')}</span>
+      </div>
+    </td>
+    <td>
+      <strong style="font-weight:600;cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.name)}</strong>
+    </td>
+    <td style="color:var(--text2);font-size:13px;">${esc(l.phone||'—')}</td>
+    <td><span class="badge badge-orange">${esc(l.type||'—')}</span></td>
+    <td>${esc(l.site||'—')}</td>
+    <td><strong>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</strong>/day</td>
+    <td style="color:var(--text2);font-size:12px;">${formatDate(l.date)}</td>
+    <td>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openDetail('${l.id}')" title="View"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="editLabour('${l.id}')" title="Edit"><i class="fas fa-pen"></i></button>
+        <button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('labour','${l.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+function filterLabourTable(v) { renderLabourTable(v); }
+function setSortKey(k) { if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = true; } document.getElementById('sortBy').value = k; renderLabourTable(); }
+
+function populateSiteFilter() {
+  const sites = [...new Set(labours.map(l => l.site).filter(Boolean))];
+  const types = [...new Set(labours.map(l => l.type).filter(Boolean))];
+  const sf = document.getElementById('siteFilter');
+  const tf = document.getElementById('typeFilter');
+  if (sf) sf.innerHTML = '<option value="">All Sites</option>' + sites.map(s => `<option>${esc(s)}</option>`).join('');
+  if (tf) tf.innerHTML = '<option value="">All Types</option>' + types.map(t => `<option>${esc(t)}</option>`).join('');
+}
+
+// ─── ATTENDANCE TABLE ───
+function renderAttendanceTable() {
+  const tbody = document.getElementById('attendanceTable');
+  if (!tbody) return;
+  if (!attendance.length) { tbody.innerHTML = emptyRow(6, 'No attendance records'); return; }
+  const sorted = [...attendance].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  tbody.innerHTML = sorted.map(a => {
+    const l = labours.find(x => x.id === a.labourId);
+    return `<tr>
+      <td><span style="background:var(--accent);color:white;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">${esc(l?.pscId||'—')}</span></td>
+      <td><strong>${esc(l?.name || 'Unknown')}</strong></td>
+      <td>${esc(l?.site || '—')}</td>
+      <td style="color:var(--text2)">${formatDate(a.date)}</td>
+      <td><span class="badge ${a.status === 'Present' ? 'badge-green' : a.status === 'Half Day' ? 'badge-orange' : 'badge-red'}">${esc(a.status)}</span></td>
+      <td><button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('attendance','${a.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── OVERTIME TABLE ───
+function renderOvertimeTable() {
+  const tbody = document.getElementById('overtimeTable');
+  if (!tbody) return;
+  if (!overtime.length) { tbody.innerHTML = emptyRow(6, 'No overtime records'); return; }
+  const sorted = [...overtime].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  tbody.innerHTML = sorted.map(o => {
+    const l = labours.find(x => x.id === o.labourId);
+    const amt = (parseFloat(o.hours)||0) * (parseFloat(o.rate)||0);
+    return `<tr>
+      <td><strong>${esc(l?.name || 'Unknown')}</strong></td>
+      <td style="color:var(--text2)">${formatDate(o.date)}</td>
+      <td><strong>${o.hours} hrs</strong></td>
+      <td>₹${parseFloat(o.rate||0).toLocaleString('en-IN')}/hr</td>
+      <td><strong style="color:var(--accent3)">₹${amt.toLocaleString('en-IN')}</strong></td>
+      <td><button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('overtime','${o.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── PAYMENT TABLE ───
+function renderPaymentTable() {
+  const tbody = document.getElementById('paymentTable');
+  if (!tbody) return;
+  if (!payments.length) { tbody.innerHTML = emptyRow(6, 'No payments recorded'); return; }
+  const sorted = [...payments].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  tbody.innerHTML = sorted.map(p => {
+    const l = labours.find(x => x.id === p.labourId);
+    return `<tr>
+      <td><strong>${esc(l?.name || 'Unknown')}</strong></td>
+      <td style="color:var(--text2)">${formatDate(p.date)}</td>
+      <td><strong style="color:var(--accent3)">₹${parseFloat(p.amount||0).toLocaleString('en-IN')}</strong></td>
+      <td><span class="badge badge-blue">${esc(p.method||'Cash')}</span></td>
+      <td style="color:var(--text2);font-size:12px">${esc(p.note||'—')}</td>
+      <td><button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('payment','${p.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── SALARY TABLE ───
+function renderSalaryTable() {
+  const tbody = document.getElementById('salaryTable');
+  if (!tbody) return;
+  if (!labours.length) { tbody.innerHTML = emptyRow(8, 'No workers added'); return; }
+  tbody.innerHTML = labours.map(l => {
+    const days = attendance.filter(a => a.labourId === l.id && a.status === 'Present').length
+               + attendance.filter(a => a.labourId === l.id && a.status === 'Half Day').length * 0.5;
+    const otAmt = overtime.filter(o => o.labourId === l.id).reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
+    const baseSalary = days * parseFloat(l.rate||0);
+    const totalSal = baseSalary + otAmt;
+    const paid = payments.filter(p => p.labourId === l.id).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+    const pending = Math.max(0, totalSal - paid);
+    const extraPaid = Math.max(0, paid - totalSal);
+    return `<tr>
+      <td><strong style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.name)}</strong>
+          <div style="font-size:11px;color:var(--text3)">${esc(l.site||'')}</div></td>
+      <td>${days}</td>
+      <td>₹${baseSalary.toLocaleString('en-IN')}</td>
+      <td>₹${otAmt.toLocaleString('en-IN')}</td>
+      <td><strong>₹${totalSal.toLocaleString('en-IN')}</strong></td>
+      <td style="color:var(--accent3)"><strong>₹${paid.toLocaleString('en-IN')}</strong></td>
+      <td><span class="badge ${pending > 0 ? 'badge-red' : 'badge-green'}">₹${pending.toLocaleString('en-IN')}</span></td>
+      <td>${extraPaid > 0 ? `<span class="badge badge-purple" title="Extra payment (jyada de di)">+₹${extraPaid.toLocaleString('en-IN')}</span>` : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openDetail('${l.id}')" title="View"><i class="fas fa-eye"></i></button>
+          <button class="btn btn-sm btn-secondary btn-icon-only" onclick="printSlipFor('${l.id}')" title="Salary Slip"><i class="fas fa-print"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CALC SALARY ───
+function calcTotalSalary(l) {
+  const days = attendance.filter(a => a.labourId === l.id && a.status === 'Present').length
+             + attendance.filter(a => a.labourId === l.id && a.status === 'Half Day').length * 0.5;
+  const otAmt = overtime.filter(o => o.labourId === l.id).reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
+  return days * parseFloat(l.rate||0) + otAmt;
+}
+
+// ─── POPULATE WORKER SELECTS ───
+function populateWorkerSelects() {
+  // attWorker shows ID first, then name
+  const attEl = document.getElementById('attWorker');
+  if (attEl) {
+    const cur = attEl.value;
+    attEl.innerHTML = '<option value="">-- ID se Worker Chunen --</option>' + 
+      labours.map(l => `<option value="${l.id}">[${esc(l.pscId||'?')}] ${esc(l.name)}</option>`).join('');
+    attEl.value = cur;
+  }
+  // otWorker and payWorker show name
+  ['otWorker', 'payWorker'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">Select worker</option>' + labours.map(l => `<option value="${l.id}">${esc(l.name)} [${esc(l.pscId||'?')}]</option>`).join('');
+    el.value = cur;
+  });
+}
+
+// ─── ADD/EDIT LABOUR ───
+function openAddModal() {
+  editingId = null;
+  document.getElementById('labourModalTitle').textContent = 'Add Labour';
+  ['labourName','labourType','labourRate','labourSite','labourPhone'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('labourDate').value = new Date().toISOString().split('T')[0];
+  openModal('labourModal');
+}
+
+function editLabour(id) {
+  const l = labours.find(x => x.id === id);
+  if (!l) return;
+  editingId = id;
+  document.getElementById('labourModalTitle').textContent = 'Edit Labour';
+  document.getElementById('labourName').value = l.name || '';
+  document.getElementById('labourType').value = l.type || '';
+  document.getElementById('labourRate').value = l.rate || '';
+  document.getElementById('labourSite').value = l.site || '';
+  document.getElementById('labourDate').value = l.date || '';
+  document.getElementById('labourPhone').value = l.phone || '';
+  openModal('labourModal');
+}
+
+function generateLabourId() {
+  // Truly unique: check existing IDs, always increment from max
+  const usedNums = new Set(labours.map(l => {
+    if (l.pscId && l.pscId.startsWith('PSC')) {
+      const n = parseInt(l.pscId.replace('PSC',''), 10);
+      return isNaN(n) ? -1 : n;
+    }
+    return -1;
+  }));
+  let num = 1;
+  while (usedNums.has(num)) num++;
+  return 'PSC' + String(num).padStart(3, '0');
+}
+
+async function saveLabour() {
+  const name  = document.getElementById('labourName').value.trim();
+  const type  = document.getElementById('labourType').value;
+  const rate  = document.getElementById('labourRate').value;
+  const site  = document.getElementById('labourSite').value.trim();
+  const date  = document.getElementById('labourDate').value;
+  const phone = document.getElementById('labourPhone').value.trim();
+
+  if (!name || !type || !rate || !site) { showToast('Please fill all required fields', 'error'); return; }
+
+  const data = { name, type, rate: parseFloat(rate), site, date, phone };
+
+  if (editingId) {
+    const existing = labours.find(l => l.id === editingId);
+    if (existing && existing.pscId) data.pscId = existing.pscId;
+    if (!useLocalStorage) await db.collection('labours').doc(editingId).update(data);
+    const idx = labours.findIndex(l => l.id === editingId);
+    if (idx !== -1) labours[idx] = { id: editingId, ...data };
+    showToast('Worker updated successfully ✅', 'success');
+  } else {
+    const id = 'l_' + Date.now();
+    data.pscId = generateLabourId();
+    if (!useLocalStorage) await db.collection('labours').doc(id).set(data);
+    labours.push({ id, ...data });
+    showToast('Worker add ho gaya: ' + data.pscId, 'success');
+    setTimeout(() => {
+      showScreenPopup('✅ Labour Add Ho Gaya!', `<b>Naam:</b> ${name}<br><b>Unique ID:</b> ${data.pscId}<br><b>Site:</b> ${site}<br><b>Daily Rate:</b> ₹${parseFloat(rate).toLocaleString('en-IN')}<br><br><i style="color:var(--accent);font-weight:600">Worker apni login ke liye yeh ID use karein: ${data.pscId}</i>`, 'success');
+    }, 200);
+  }
+
+  saveAll();
+  closeModal('labourModal');
+  // Reset form fields
+  ['labourName','labourType','labourRate','labourSite','labourPhone'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('labourDate').value = new Date().toISOString().split('T')[0];
+  editingId = null;
+  renderAll();
+}
+
+// ─── ATTENDANCE ───
+function openBulkAttModal() { openModal('attendanceModal'); }
+
+async function saveAttendance() {
+  const labourId = document.getElementById('attWorker').value;
+  const date     = document.getElementById('attModalDate').value;
+  const status   = document.getElementById('attStatus').value;
+
+  if (!labourId || !date) { showToast('Please select worker and date', 'error'); return; }
+
+  const data = { labourId, date, status };
+  const id = 'a_' + Date.now();
+
+  // Ek din mein ek hi attendance allowed
+  const exists = attendance.find(a => a.labourId === labourId && a.date === date);
+  if (exists) {
+    showScreenPopup('⚠️ Already Marked', `Is worker ki is din (${formatDate(date)}) ki attendance pehle se mark ho chuki hai.\n\nStatus: ${exists.status}`, 'warn');
+    return;
+  }
+  if (!useLocalStorage) await db.collection('attendance').doc(id).set(data);
+  attendance.push({ id, ...data });
+  showToast('Attendance mark ho gayi ✅', 'success');
+
+  saveAll(); closeModal('attendanceModal'); renderAll();
+}
+
+// ─── OVERTIME ───
+function openOTModal() {
+  document.getElementById('otPreview').style.display = 'none';
+  openModal('overtimeModal');
+}
+
+function updateOTRate() {
+  const labourId = document.getElementById('otWorker').value;
+  const l = labours.find(x => x.id === labourId);
+  if (l && l.rate) {
+    const otRate = Math.round(parseFloat(l.rate) / 8);
+    document.getElementById('otRate').value = otRate;
+    updateOTPreview();
+  } else {
+    document.getElementById('otRate').value = '';
+  }
+}
+
+function updateOTPreview() {
+  const hours = parseFloat(document.getElementById('otHours').value) || 0;
+  const rate  = parseFloat(document.getElementById('otRate').value) || 0;
+  const amt   = hours * rate;
+  if (hours > 0 && rate > 0) {
+    document.getElementById('otPreview').style.display = 'block';
+    document.getElementById('otAmtPreview').textContent = '₹' + amt.toLocaleString('en-IN');
+  }
+}
+
+async function saveOT() {
+  const labourId = document.getElementById('otWorker').value;
+  const date     = document.getElementById('otDate').value;
+  const hours    = document.getElementById('otHours').value;
+  const rate     = document.getElementById('otRate').value;
+
+  if (!labourId || !date || !hours) { showToast('Please fill all fields', 'error'); return; }
+
+  const l = labours.find(x => x.id === labourId);
+  const actualRate = rate || Math.round(parseFloat(l?.rate || 0) / 8);
+  const amt = parseFloat(hours) * parseFloat(actualRate);
+
+  const data = { labourId, date, hours: parseFloat(hours), rate: parseFloat(actualRate) };
+  const id = 'o_' + Date.now();
+
+  if (!useLocalStorage) await db.collection('overtime').doc(id).set(data);
+  overtime.push({ id, ...data });
+  saveAll(); closeModal('overtimeModal'); renderAll();
+  showToast('Overtime recorded ✅ ₹' + amt.toLocaleString('en-IN'), 'success');
+}
+
+// ─── PAYMENTS ───
+function openPaymentModal() { openModal('paymentModal'); }
+
+async function savePayment() {
+  const labourId = document.getElementById('payWorker').value;
+  const date     = document.getElementById('payDate').value;
+  const amount   = document.getElementById('payAmount').value;
+  const method   = document.getElementById('payMethod').value;
+  const noteRaw  = document.getElementById('payNote').value.trim();
+
+  if (!labourId || !date || !amount) { showToast('Please fill required fields', 'error'); return; }
+
+  // Calculate if this is extra payment
+  const l = labours.find(x => x.id === labourId);
+  const totalSal = l ? calcTotalSalary(l) : 0;
+  const alreadyPaid = payments.filter(p => p.labourId === labourId).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  const newTotal = alreadyPaid + parseFloat(amount);
+  const isExtra = newTotal > totalSal && totalSal > 0;
+  const note = isExtra ? (noteRaw ? noteRaw + ' [EXTRA]' : 'EXTRA PAYMENT') : noteRaw;
+
+  const data = { labourId, date, amount: parseFloat(amount), method, note };
+  const id = 'p_' + Date.now();
+
+  if (!useLocalStorage) await db.collection('payments').doc(id).set(data);
+  payments.push({ id, ...data });
+  saveAll();
+  closeModal('paymentModal');
+
+  // Reset form
+  document.getElementById('payAmount').value = '';
+  document.getElementById('payNote').value = '';
+
+  renderAll();
+
+  const workerName = l ? l.name : 'Worker';
+  const extraMsg = isExtra ? '<br><span style="color:#ef4444;font-weight:600">⚠️ EXTRA PAYMENT: Yeh payment total salary se zyada hai!</span>' : '';
+  showToast('Payment record ho gayi ✅' + (isExtra ? ' (EXTRA)' : ''), 'success');
+  setTimeout(() => {
+    showScreenPopup('✅ Payment Record Ho Gayi', `<b>Worker:</b> ${workerName}<br><b>Amount:</b> ₹${parseFloat(amount).toLocaleString('en-IN')}<br><b>Method:</b> ${method}${extraMsg}`, isExtra ? 'warn' : 'success');
+  }, 100);
+}
+
+// ─── DELETE ───
+function confirmDelete(type, id) {
+  const l = labours.find(x => x.id === id);
+  if (type === 'labour') {
+    showPinPopup(
+      '🔐 Worker Delete — PIN Darj Karen',
+      `"${l?.name || 'Worker'}" ko delete karne ke liye admin PIN daalen. Yeh amal wapas nahi ho sakta.`,
+      () => doDelete('labour', id)
+    );
+  } else {
+    let msg = 'Kya aap yeh record delete karna chahte hain? Yeh wapas nahi hoga.';
+    deleteCallback = () => doDelete(type, id);
+    openModal('confirmModal');
+  }
+}
+
+async function executeDelete() {
+  if (deleteCallback) await deleteCallback();
+  deleteCallback = null;
+  closeModal('confirmModal');
+}
+
+async function doDelete(type, id) {
+  if (type === 'labour') {
+    if (!useLocalStorage) {
+      await db.collection('labours').doc(id).delete();
+      // Also delete related records
+      const attIds = attendance.filter(a => a.labourId === id).map(a => a.id);
+      const otIds  = overtime.filter(o => o.labourId === id).map(o => o.id);
+      const pIds   = payments.filter(p => p.labourId === id).map(p => p.id);
+      await Promise.all([...attIds.map(i => db.collection('attendance').doc(i).delete()),
+                         ...otIds.map(i => db.collection('overtime').doc(i).delete()),
+                         ...pIds.map(i => db.collection('payments').doc(i).delete())]);
+    }
+    labours    = labours.filter(l => l.id !== id);
+    attendance = attendance.filter(a => a.labourId !== id);
+    overtime   = overtime.filter(o => o.labourId !== id);
+    payments   = payments.filter(p => p.labourId !== id);
+    showToast('Worker deleted', 'success');
+  } else if (type === 'attendance') {
+    if (!useLocalStorage) await db.collection('attendance').doc(id).delete();
+    attendance = attendance.filter(a => a.id !== id);
+    showToast('Attendance record deleted', 'success');
+  } else if (type === 'overtime') {
+    if (!useLocalStorage) await db.collection('overtime').doc(id).delete();
+    overtime = overtime.filter(o => o.id !== id);
+    showToast('Overtime record deleted', 'success');
+  } else if (type === 'payment') {
+    if (!useLocalStorage) await db.collection('payments').doc(id).delete();
+    payments = payments.filter(p => p.id !== id);
+    showToast('Payment deleted', 'success');
+  }
+  saveAll(); renderAll();
+}
+
+// ─── DETAIL MODAL ───
+function openDetail(id) {
+  const l = labours.find(x => x.id === id);
+  if (!l) return;
+  currentDetailLabour = l;
+
+  const lAtt  = attendance.filter(a => a.labourId === id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  const lOT   = overtime.filter(o => o.labourId === id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  const lPay  = payments.filter(p => p.labourId === id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+
+  const days  = lAtt.filter(a => a.status === 'Present').length + lAtt.filter(a => a.status === 'Half Day').length * 0.5;
+  const otAmt = lOT.reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
+  const totalSal = days * parseFloat(l.rate||0) + otAmt;
+  const paid  = lPay.reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  const pending = Math.max(0, totalSal - paid);
+
+  document.getElementById('detailModalBody').innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-avatar">${l.name?.charAt(0)?.toUpperCase() || 'W'}</div>
+      <div class="detail-info">
+        <div class="name">${esc(l.name)}</div>
+        <div class="meta"><span class="badge badge-orange">${esc(l.type||'—')}</span>
+          &nbsp;📍 ${esc(l.site||'—')} &nbsp; 📅 ${formatDate(l.date)}
+          ${l.phone ? `&nbsp; 📞 ${esc(l.phone)}` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="detail-stats" style="grid-template-columns:repeat(4,1fr)">
+      <div class="detail-stat">
+        <div class="detail-stat-val">${days}</div>
+        <div class="detail-stat-lbl">Days Present</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val" style="color:var(--accent3)">₹${totalSal.toLocaleString('en-IN')}</div>
+        <div class="detail-stat-lbl">Total Salary</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val" style="color:${pending > 0 ? '#ef4444' : '#10b981'}">₹${pending.toLocaleString('en-IN')}</div>
+        <div class="detail-stat-lbl">Pending</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val" style="color:${paid > totalSal && totalSal > 0 ? '#8b5cf6' : 'var(--text3)'}">₹${Math.max(0,paid-totalSal).toLocaleString('en-IN')}</div>
+        <div class="detail-stat-lbl">Extra Paid</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title"><i class="fas fa-calendar-check"></i> Attendance History</div>
+      <div class="detail-list">
+        ${lAtt.length ? lAtt.slice(0,10).map(a => `
+          <div class="detail-row">
+            <span class="dr-date">${formatDate(a.date)}</span>
+            <span class="badge ${a.status === 'Present' ? 'badge-green' : a.status === 'Half Day' ? 'badge-orange' : 'badge-red'}">${a.status}</span>
+            ${a.otHours ? `<span style="font-size:12px;color:var(--text2)">${a.otHours}hr OT</span>` : ''}
+          </div>`).join('') :
+          '<div style="color:var(--text3);font-size:13px;padding:10px">No attendance records</div>'
+        }
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title"><i class="fas fa-clock"></i> Overtime History</div>
+      <div class="detail-list">
+        ${lOT.length ? lOT.map(o => {
+          const amt = (parseFloat(o.hours)||0) * (parseFloat(o.rate)||0);
+          return `<div class="detail-row">
+            <span class="dr-date">${formatDate(o.date)}</span>
+            <span>${o.hours} hrs @ ₹${o.rate}/hr</span>
+            <span class="dr-val green">₹${amt.toLocaleString('en-IN')}</span>
+          </div>`;
+        }).join('') :
+          '<div style="color:var(--text3);font-size:13px;padding:10px">No overtime records</div>'
+        }
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title"><i class="fas fa-wallet"></i> Payment History</div>
+      <div class="detail-list">
+        ${lPay.length ? lPay.map((p, i) => `
+          <div class="detail-row" style="${i===0 ? 'border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)' : ''}">
+            <span class="dr-date">${formatDate(p.date)}</span>
+            <span class="badge badge-blue">${esc(p.method||'Cash')}</span>
+            ${p.note ? `<span style="font-size:12px;color:var(--text2)">${esc(p.note)}</span>` : ''}
+            <span class="dr-val green">₹${parseFloat(p.amount||0).toLocaleString('en-IN')}</span>
+          </div>`).join('') :
+          '<div style="color:var(--text3);font-size:13px;padding:10px">No payments recorded</div>'
+        }
+        ${lPay.length ? `<div class="detail-row" style="background:var(--bg2);font-weight:700;">
+          <span>Total Paid</span>
+          <span class="dr-val green">₹${paid.toLocaleString('en-IN')}</span>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
+  openModal('detailModal');
+}
+
+// ─── SALARY SLIP PRINT ───
+function printSlip() {
+  if (currentDetailLabour) printSlipFor(currentDetailLabour.id);
+}
+
+function printSlipFor(id) {
+  const l = labours.find(x => x.id === id);
+  if (!l) return;
+
+  const lAtt = attendance.filter(a => a.labourId === id);
+  const lOT  = overtime.filter(o => o.labourId === id);
+  const lPay = payments.filter(p => p.labourId === id);
+
+  const days = lAtt.filter(a => a.status === 'Present').length + lAtt.filter(a => a.status === 'Half Day').length * 0.5;
+  const otAmt = lOT.reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
+  const baseSal = days * parseFloat(l.rate||0);
+  const totalSal = baseSal + otAmt;
+  const paid = lPay.reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  const pending = Math.max(0, totalSal - paid);
+
+  const slipHTML = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:2px solid #333;padding:30px;">
+      <div style="text-align:center;border-bottom:2px solid #f97316;padding-bottom:16px;margin-bottom:20px;">
+        <h1 style="color:#f97316;margin:0;font-size:24px;">PS Construction</h1>
+        <p style="margin:4px 0;color:#666;font-size:13px;">Labour Salary Slip</p>
+        <p style="margin:0;font-size:12px;color:#999;">Generated: ${new Date().toLocaleDateString('en-IN')}</p>
+      </div>
+      <table style="width:100%;margin-bottom:20px;">
+        <tr><td style="padding:4px 0;color:#666;font-size:13px;width:40%">Worker Name</td><td style="font-weight:bold">${esc(l.name)}</td></tr>
+        <tr><td style="padding:4px 0;color:#666;font-size:13px">Labour Type</td><td>${esc(l.type||'—')}</td></tr>
+        <tr><td style="padding:4px 0;color:#666;font-size:13px">Site / Project</td><td>${esc(l.site||'—')}</td></tr>
+        <tr><td style="padding:4px 0;color:#666;font-size:13px">Daily Rate</td><td>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</td></tr>
+        ${l.phone ? `<tr><td style="padding:4px 0;color:#666;font-size:13px">Phone</td><td>${esc(l.phone)}</td></tr>` : ''}
+      </table>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <tr style="background:#f5f5f5;"><th style="padding:8px;text-align:left;border:1px solid #ddd">Description</th><th style="padding:8px;text-align:right;border:1px solid #ddd">Amount</th></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd">Basic Salary (${days} days × ₹${parseFloat(l.rate||0).toLocaleString('en-IN')})</td><td style="padding:8px;text-align:right;border:1px solid #ddd">₹${baseSal.toLocaleString('en-IN')}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd">Overtime Allowance</td><td style="padding:8px;text-align:right;border:1px solid #ddd">₹${otAmt.toLocaleString('en-IN')}</td></tr>
+        <tr style="background:#fff3e0;font-weight:bold;"><td style="padding:10px;border:1px solid #ddd">TOTAL SALARY</td><td style="padding:10px;text-align:right;border:1px solid #ddd;color:#f97316">₹${totalSal.toLocaleString('en-IN')}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd">Total Paid</td><td style="padding:8px;text-align:right;border:1px solid #ddd;color:green">₹${paid.toLocaleString('en-IN')}</td></tr>
+        <tr style="font-weight:bold;background:${pending > 0 ? '#fee2e2' : '#dcfce7'};"><td style="padding:10px;border:1px solid #ddd">BALANCE PENDING</td><td style="padding:10px;text-align:right;border:1px solid #ddd;color:${pending > 0 ? 'red' : 'green'}">₹${pending.toLocaleString('en-IN')}</td></tr>
+      </table>
+      <div style="margin-top:40px;display:flex;justify-content:space-between;">
+        <div><div style="border-top:1px solid #333;width:160px;padding-top:6px;font-size:12px;text-align:center">Worker Signature</div></div>
+        <div><div style="border-top:1px solid #333;width:160px;padding-top:6px;font-size:12px;text-align:center">Authorized Signature</div></div>
+      </div>
+    </div>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Salary Slip — ${esc(l.name)}</title></head><body>${slipHTML}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+function printAllSlips() {
+  if (!labours.length) { showToast('No workers to print', 'warn'); return; }
+  showToast('Opening salary report…', 'info');
+  setTimeout(() => {
+    labours.forEach(l => printSlipFor(l.id));
+  }, 300);
+}
+
+// ─── NAVIGATION ───
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`)?.classList.add('active');
+  const titles = { dashboard:'Dashboard', labours:'Labour Registry', attendance:'Attendance', overtime:'Overtime', payments:'Payments', salary:'Salary Report' };
+  document.getElementById('pageTitle').textContent = titles[page] || '';
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(page)) n.classList.add('active');
+  });
+  closeSidebar();
+}
+
+// ─── SIDEBAR ───
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  sb.classList.toggle('open');
+  if (ov) ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  const ov = document.getElementById('sidebarOverlay');
+  if (ov) ov.style.display = 'none';
+}
+
+// ─── THEME ───
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateThemeIcon(next);
+}
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+// ─── GLOBAL SEARCH ───
+function handleGlobalSearch(v) {
+  showPage('labours');
+  document.getElementById('labourSearch').value = v;
+  filterLabourTable(v);
+}
+
+// ─── REFRESH ───
+async function refreshData() {
+  showToast('Refreshing data…', 'info');
+  await loadAllData();
+  renderAll();
+  showToast('Data refreshed', 'success');
+}
+
+function logout() {
+  showScreenPopup('Logout Confirm', 'Kya aap logout karna chahte hain?', 'warn', doActualLogout);
+}
+
+// ─── MODAL HELPERS ───
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('open'); el.style.display = 'flex'; }
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.remove('open'); el.style.display = ''; }
+}
+// Close on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); });
+});
+
+// ─── TOAST ───
+function showToast(msg, type = 'info') {
+  const icons = { success: 'fa-check', error: 'fa-times', info: 'fa-info', warn: 'fa-exclamation-triangle' };
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<div class="toast-icon"><i class="fas ${icons[type]||'fa-info'}"></i></div><span>${esc(msg)}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('removing');
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
+}
+
+// ─── HELPERS ───
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatDate(d) {
+  if (!d) return '—';
+  try { return new Date(d + 'T12:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+  catch { return d; }
+}
+function emptyRow(cols, msg) {
+  return `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-state-icon"><i class="fas fa-inbox"></i></div><div class="empty-state-title">${msg}</div><div class="empty-state-sub">Add some records to get started</div></div></td></tr>`;
+}
+</script>
+</body>
+</html>
