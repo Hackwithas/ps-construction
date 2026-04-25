@@ -847,17 +847,17 @@ select.form-input { cursor: pointer; }
     <div class="login-form">
       <div class="form-group">
         <label class="form-label">Username / Email</label>
-        <input type="text" class="form-input" id="adminEmail" placeholder="admin@constructpro.com" value="admin">
+        <input type="text" class="form-input" id="adminEmail" placeholder="admin@constructpro.com" >
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="adminPass" placeholder="Enter password" value="admin123" onkeydown="if(event.key==='Enter')doAdminLogin()">
+        <input type="password" class="form-input" id="adminPass" placeholder="Enter password"  onkeydown="if(event.key==='Enter')doAdminLogin()">
       </div>
       <button class="btn-login-submit" onclick="doAdminLogin()">
         <i class="fas fa-sign-in-alt" style="margin-right:8px"></i> Sign In to Dashboard
       </button>
     </div>
-    <div class="login-hint">Default: admin / admin123</div>
+    <div class="login-hint">Example: admin / admin123</div>
   </div>
 </div>
 
