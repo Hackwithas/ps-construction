@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>WorkerPanel — Construction Labour Portal</title>
+<title>PS Panel — Construction Labour Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -803,6 +803,42 @@ body {
 .progress-fill { height: 100%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1) 0.3s; }
 .progress-fill.green { background: linear-gradient(90deg, var(--green), #34d399); }
 .progress-fill.red { background: linear-gradient(90deg, var(--red), #f87171); }
+
+#google_translate_element{
+  display: flex;
+  align-items: center;
+  max-width: 140px;
+  overflow: hidden;
+}
+
+.goog-te-gadget{
+  font-size: 0 !important;
+}
+
+.goog-te-gadget select{
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  cursor: pointer;
+}
+@media (max-width: 768px){
+  #google_translate_element{
+    max-width: 100px;
+  }
+
+  .goog-te-gadget select{
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}
+.nav-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
 </style>
 </head>
 <body>
@@ -848,7 +884,7 @@ body {
       <div class="login-logo-icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/></svg>
       </div>
-      <div class="login-title">WorkerPanel</div>
+      <div class="login-title">PS Panel</div>
       <div class="login-sub">Construction Labour Management System</div>
     </div>
     <!-- Step 1: Unique ID -->
@@ -896,11 +932,16 @@ body {
       <div class="brand-icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21"/></svg>
       </div>
-      <div class="brand-name">Worker<span>Panel</span></div>
+      <div class="brand-name">PS<span>Panel</span></div>
     </div>
+    <div style="padding-left: 60%;">
+    <div id="google_translate_element"></div></div>
+
     <div class="topbar-right">
+      
       <div class="topbar-worker-name" id="topbarName">Loading...</div>
       <div class="topbar-avatar" id="topbarAvatar" onclick="showEditProfile()">R</div>
+
       <button class="topbar-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
         <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>
       </button>
@@ -1640,7 +1681,7 @@ function downloadSalarySlip() {
   <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:40px;background:white;color:#111">
     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f97316;padding-bottom:20px;margin-bottom:24px">
       <div>
-        <div style="font-size:22px;font-weight:800;color:#f97316">WorkerPanel</div>
+        <div style="font-size:22px;font-weight:800;color:#f97316">PS Construction</div>
         <div style="font-size:12px;color:#666;margin-top:2px">Construction Labour Management System</div>
       </div>
       <div style="text-align:right">
@@ -1760,5 +1801,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'en,hi',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+  }, 'google_translate_element');
+}
+</script>
+
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
