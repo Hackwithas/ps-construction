@@ -1,1493 +1,1227 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PS Construction — Worker Management</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<!-- Firebase SDK -->
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PS Panel — Construction Labour Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
-/* ─── CSS VARIABLES ─── */
+/* ============================
+   CSS VARIABLES & RESET
+============================ */
 :root {
-  --bg: #f0f4f8;
-  --bg2: #e8edf3;
-  --surface: rgba(255,255,255,0.85);
-  --surface2: rgba(255,255,255,0.6);
-  --glass: rgba(255,255,255,0.72);
-  --glass-border: rgba(255,255,255,0.9);
-  --sidebar-bg: rgba(15,23,42,0.97);
-  --sidebar-text: rgba(255,255,255,0.75);
-  --sidebar-active: #f97316;
-  --text: #0f172a;
-  --text2: #64748b;
-  --text3: #94a3b8;
+  --bg-primary: #f0f2f7;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255,255,255,0.72);
+  --bg-glass: rgba(255,255,255,0.55);
+  --bg-topbar: rgba(255,255,255,0.82);
+  --border: rgba(0,0,0,0.07);
+  --border-strong: rgba(0,0,0,0.12);
+  --text-primary: #0f1623;
+  --text-secondary: #4a5568;
+  --text-muted: #8492a6;
   --accent: #f97316;
+  --accent-light: #fff3e8;
   --accent2: #3b82f6;
-  --accent3: #10b981;
-  --danger: #ef4444;
-  --warn: #f59e0b;
-  --border: rgba(148,163,184,0.2);
-  --shadow: 0 4px 24px rgba(15,23,42,0.08);
-  --shadow-lg: 0 16px 48px rgba(15,23,42,0.14);
+  --accent2-light: #eff6ff;
+  --green: #10b981;
+  --green-light: #ecfdf5;
+  --red: #ef4444;
+  --red-light: #fef2f2;
+  --purple: #8b5cf6;
+  --purple-light: #f5f3ff;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 8px 30px rgba(0,0,0,0.1);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.13);
   --radius: 16px;
   --radius-sm: 10px;
+  --radius-xs: 6px;
   --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
-  --sidebar-w: 260px;
+  --blur: blur(18px);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
 }
 [data-theme="dark"] {
-  --bg: #0a0f1e;
-  --bg2: #0f172a;
-  --surface: rgba(15,23,42,0.9);
-  --surface2: rgba(30,41,59,0.7);
-  --glass: rgba(15,23,42,0.85);
-  --glass-border: rgba(255,255,255,0.08);
-  --sidebar-bg: rgba(5,8,16,0.98);
-  --text: #f1f5f9;
-  --text2: #94a3b8;
-  --text3: #64748b;
+  --bg-primary: #0c0f18;
+  --bg-secondary: #141824;
+  --bg-card: rgba(20,24,36,0.82);
+  --bg-glass: rgba(20,24,36,0.6);
+  --bg-topbar: rgba(12,15,24,0.9);
   --border: rgba(255,255,255,0.07);
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.5);
+  --border-strong: rgba(255,255,255,0.12);
+  --text-primary: #f0f4ff;
+  --text-secondary: #a8b2c8;
+  --text-muted: #5a6480;
+  --accent-light: rgba(249,115,22,0.12);
+  --accent2-light: rgba(59,130,246,0.12);
+  --green-light: rgba(16,185,129,0.12);
+  --red-light: rgba(239,68,68,0.12);
+  --purple-light: rgba(139,92,246,0.12);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 30px rgba(0,0,0,0.4);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
 }
-
-/* ─── RESET & BASE ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
-  overflow-x: hidden;
   transition: background var(--transition), color var(--transition);
+  overflow-x: hidden;
 }
-body::before {
-  content: '';
-  position: fixed;
-  top: -40%;
-  right: -20%;
-  width: 700px;
-  height: 700px;
-  background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-body::after {
-  content: '';
-  position: fixed;
-  bottom: -30%;
-  left: 10%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-[data-theme="dark"] body::before { background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%); }
-[data-theme="dark"] body::after { background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%); }
 
-/* ─── LAYOUT ─── */
-#app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
-
-/* ─── SIDEBAR ─── */
-.sidebar {
-  width: var(--sidebar-w);
-  background: var(--sidebar-bg);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  z-index: 100;
-  transition: transform var(--transition), width var(--transition);
-  overflow: hidden;
+/* ============================
+   ANIMATED BACKGROUND
+============================ */
+.bg-canvas {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
 }
-.sidebar::before {
-  content: '';
+.bg-orb {
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.6), transparent);
-}
-.sidebar-logo {
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.sidebar-logo .logo-mark {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.logo-icon {
-  width: 38px; height: 38px;
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: white;
-  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
-}
-.logo-text { font-family: 'Syne', sans-serif; color: #fff; }
-.logo-text .brand { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-.logo-text .tagline { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; }
-
-.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-.nav-section-label {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.25);
-  padding: 12px 8px 6px;
-  font-weight: 600;
-}
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  color: var(--sidebar-text);
-  font-size: 14px;
-  font-weight: 500;
-  transition: all var(--transition);
-  margin-bottom: 2px;
-  position: relative;
-  white-space: nowrap;
-}
-.nav-item i { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
-.nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-.nav-item.active {
-  background: linear-gradient(135deg, rgba(249,115,22,0.25), rgba(249,115,22,0.1));
-  color: #fb923c;
-  border: 1px solid rgba(249,115,22,0.2);
-}
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 50%;
-  transform: translateY(-50%);
-  width: 3px; height: 60%;
-  background: #f97316;
-  border-radius: 0 2px 2px 0;
-}
-
-.sidebar-footer {
-  padding: 16px 12px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
-
-/* ─── MAIN CONTENT ─── */
-.main-content {
-  margin-left: var(--sidebar-w);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  transition: margin-left var(--transition);
-}
-
-/* ─── TOPBAR ─── */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 90;
-  padding: 0 28px;
-  height: 68px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--glass-border);
-  transition: background var(--transition);
-}
-.topbar-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; flex: 0 0 auto; }
-.topbar-search {
-  flex: 1;
-  max-width: 360px;
-  position: relative;
-}
-.topbar-search input {
-  width: 100%;
-  height: 38px;
-  padding: 0 16px 0 40px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text);
-  font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  outline: none;
-  transition: all var(--transition);
-}
-.topbar-search input:focus {
-  border-color: var(--accent);
-  background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
-}
-.topbar-search i {
-  position: absolute;
-  left: 13px; top: 50%;
-  transform: translateY(-50%);
-  color: var(--text3);
-  font-size: 13px;
-}
-.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.icon-btn {
-  width: 38px; height: 38px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text2);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px;
-  transition: all var(--transition);
-}
-.icon-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); transform: translateY(-1px); }
-.theme-toggle { position: relative; }
-
-.avatar {
-  width: 38px; height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f97316, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  color: white; font-weight: 700; font-size: 14px;
-  cursor: pointer;
-  font-family: 'Syne', sans-serif;
-}
-
-.menu-toggle {
-  display: none;
-  width: 38px; height: 38px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text2);
-  cursor: pointer;
-  align-items: center; justify-content: center;
-  font-size: 16px;
-}
-
-/* ─── PAGE CONTENT ─── */
-.page { display: none; padding: 28px; animation: fadeInUp 0.4s ease; }
-.page.active { display: block; }
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ─── STATS CARDS ─── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  padding: 22px;
-  box-shadow: var(--shadow);
-  position: relative;
-  overflow: hidden;
-  cursor: default;
-  transition: all var(--transition);
-}
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0;
-  width: 120px; height: 120px;
   border-radius: 50%;
-  background: var(--card-color, rgba(249,115,22,0.08));
-  transform: translate(30%, -30%);
-  transition: transform var(--transition);
+  filter: blur(80px);
+  opacity: 0.3;
+  animation: orbFloat 12s ease-in-out infinite;
 }
-.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
-.stat-card:hover::before { transform: translate(20%, -20%) scale(1.1); }
-.stat-card-icon {
-  width: 44px; height: 44px;
-  border-radius: 12px;
-  background: var(--card-color, rgba(249,115,22,0.12));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 19px;
-  color: var(--card-accent, #f97316);
-  margin-bottom: 14px;
+.bg-orb:nth-child(1) {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #f97316 0%, transparent 70%);
+  top: -150px; left: -100px;
+  animation-delay: 0s;
 }
-.stat-card-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
-.stat-card-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
-.stat-card-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+.bg-orb:nth-child(2) {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+  top: 30%; right: -100px;
+  animation-delay: -4s;
+}
+.bg-orb:nth-child(3) {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+  bottom: -100px; left: 30%;
+  animation-delay: -8s;
+}
+[data-theme="dark"] .bg-orb { opacity: 0.18; }
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(30px,-40px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+}
 
-/* ─── SECTION HEADER ─── */
-.section-header {
+/* ============================
+   LAYOUT
+============================ */
+.layout { position: relative; z-index: 1; }
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-topbar);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 66px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition);
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 12px;
+}
+.brand-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--accent), #fb923c);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.35);
+}
+.brand-icon svg { width: 20px; height: 20px; color: white; }
+/* ============================
+   ANIMATED BRAND NAME
+============================ */
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem; font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  min-width: 130px;
+}
+.brand-name .brand-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: charDrop 0.4s ease forwards;
+}
+.brand-name .brand-char.accent { color: var(--accent); }
+@keyframes charDrop {
+  to { opacity: 1; transform: translateY(0); }
+}
+.topbar-right {
+  display: flex; align-items: center; gap: 10px;
+}
+.topbar-worker-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+.topbar-avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent2), var(--purple));
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: white;
+  cursor: pointer; transition: transform var(--transition);
+  position: relative;
+}
+.topbar-avatar:hover { transform: scale(1.08); }
+.topbar-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text-secondary);
+}
+.topbar-btn:hover { background: var(--bg-card); transform: scale(1.06); color: var(--text-primary); }
+.topbar-btn svg { width: 17px; height: 17px; }
+.logout-btn {
+  padding: 0 14px; height: 36px; width: auto;
+  font-family: var(--font-body); font-size: 0.8rem; font-weight: 500;
+  color: var(--red); border-color: rgba(239,68,68,0.25);
+  background: var(--red-light);
+  gap: 6px;
+}
+.logout-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+.logout-btn svg { width: 15px; height: 15px; }
+
+/* ============================
+   MAIN CONTENT
+============================ */
+.main { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* ============================
+   SECTION HEADER
+============================ */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px;
 }
 .section-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  color: var(--text-primary); letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 8px;
 }
-.section-actions { display: flex; gap: 10px; align-items: center; }
+.section-title .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
 
-/* ─── BUTTONS ─── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: var(--radius-sm);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all var(--transition);
-  position: relative;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.btn::after {
-  content: '';
-  position: absolute;
-  width: 0; height: 0;
-  top: 50%; left: 50%;
-  background: rgba(255,255,255,0.3);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.4s, height 0.4s, opacity 0.4s;
-  opacity: 0;
-}
-.btn:active::after { width: 200px; height: 200px; opacity: 0; }
-.btn-primary { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; box-shadow: 0 4px 14px rgba(249,115,22,0.35); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249,115,22,0.45); }
-.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: var(--bg); border-color: var(--accent); color: var(--accent); }
-.btn-danger { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
-.btn-danger:hover { background: #ef4444; color: white; }
-.btn-sm { padding: 7px 14px; font-size: 12px; }
-.btn-icon-only { padding: 8px; width: 34px; height: 34px; justify-content: center; }
-
-/* ─── TABLE ─── */
-.table-wrap {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
+/* ============================
+   PROFILE HERO CARD
+============================ */
+.profile-card {
+  background: linear-gradient(135deg, var(--accent) 0%, #fb923c 60%, var(--accent2) 100%);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+  padding: 28px 32px;
+  display: flex; align-items: center; gap: 24px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(249,115,22,0.3);
+  margin-bottom: 28px;
+  animation: fadeSlideUp 0.5s ease both;
 }
-.table-controls {
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+.profile-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='28' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='1'/%3E%3C/svg%3E") repeat;
+  opacity: 1;
 }
-.table-search {
-  flex: 1;
-  min-width: 180px;
-  max-width: 280px;
-  position: relative;
-}
-.table-search input {
-  width: 100%;
-  height: 36px;
-  padding: 0 12px 0 36px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  outline: none;
-  transition: all var(--transition);
-}
-.table-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
-.table-search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 12px; }
-.table-select {
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  outline: none;
-  cursor: pointer;
-}
-.table-scroll { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 700px; }
-thead { position: sticky; top: 0; background: var(--bg2); z-index: 2; }
-thead th {
-  padding: 13px 16px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text2);
-  cursor: pointer;
-  user-select: none;
-  transition: color var(--transition);
-  white-space: nowrap;
-}
-thead th:hover { color: var(--accent); }
-thead th .sort-icon { margin-left: 4px; font-size: 10px; opacity: 0.5; }
-tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background var(--transition);
-}
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: rgba(249,115,22,0.04); }
-tbody td { padding: 13px 16px; font-size: 13.5px; vertical-align: middle; }
-
-/* ─── BADGES ─── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.badge-blue { background: rgba(59,130,246,0.12); color: #3b82f6; }
-.badge-green { background: rgba(16,185,129,0.12); color: #10b981; }
-.badge-orange { background: rgba(249,115,22,0.12); color: #f97316; }
-.badge-red { background: rgba(239,68,68,0.12); color: #ef4444; }
-.badge-purple { background: rgba(139,92,246,0.12); color: #8b5cf6; }
-
-/* ─── MODALS ─── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: fadeIn 0.2s ease;
-}
-.modal-overlay.open { display: flex; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.modal {
-  background: var(--surface);
-  backdrop-filter: blur(30px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: 0;
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  display: flex;
-  flex-direction: column;
-}
-.modal-lg { max-width: 680px; }
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.92) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
-.modal-close {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: var(--bg);
-  border: none;
-  color: var(--text2);
-  cursor: pointer;
+.profile-avatar-large {
+  width: 80px; height: 80px; min-width: 80px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%; border: 3px solid rgba(255,255,255,0.4);
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
+  font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: white;
+  position: relative; z-index: 1;
+}
+.profile-info { position: relative; z-index: 1; flex: 1; }
+.profile-name {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800;
+  color: white; letter-spacing: -0.02em; margin-bottom: 4px;
+}
+.profile-id {
+  font-size: 0.82rem; color: rgba(255,255,255,0.75); font-weight: 500; margin-bottom: 10px;
+}
+.profile-meta {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.profile-meta-item {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.18); border-radius: 20px;
+  padding: 4px 12px; font-size: 0.78rem; color: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+}
+.profile-meta-item svg { width: 13px; height: 13px; }
+.profile-card-actions {
+  display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;
+}
+.profile-action-btn {
+  padding: 8px 16px; border-radius: var(--radius-xs);
+  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+  color: white; font-family: var(--font-body); font-size: 0.78rem; font-weight: 500;
+  cursor: pointer; transition: all var(--transition); white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px);
+}
+.profile-action-btn:hover { background: rgba(255,255,255,0.35); transform: translateY(-1px); }
+.profile-action-btn svg { width: 13px; height: 13px; }
+
+/* ============================
+   SUMMARY CARDS
+============================ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.summary-card {
+  background: var(--bg-card);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  cursor: default;
   transition: all var(--transition);
+  animation: fadeSlideUp 0.5s ease both;
+  position: relative; overflow: hidden;
 }
-.modal-close:hover { background: #ef4444; color: white; }
-.modal-body { padding: 22px 24px; overflow-y: auto; flex: 1; }
-.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0; }
-
-/* ─── FORM ─── */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group.full { grid-column: 1 / -1; }
-.form-label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
-.form-input {
-  height: 42px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  outline: none;
-  transition: all var(--transition);
-}
-.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); background: var(--surface); }
-.form-input::placeholder { color: var(--text3); }
-select.form-input { cursor: pointer; }
-
-/* ─── DETAIL MODAL ─── */
-.detail-hero {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(59,130,246,0.06));
-  border-radius: 14px;
-  margin-bottom: 20px;
-}
-.detail-avatar {
-  width: 56px; height: 56px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #f97316, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-size: 22px;
-  font-weight: 800;
-  color: white;
-  flex-shrink: 0;
-}
-.detail-info .name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
-.detail-info .meta { font-size: 13px; color: var(--text2); margin-top: 4px; }
-.detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
-.detail-stat {
-  background: var(--bg);
-  border-radius: 12px;
-  padding: 14px;
-  text-align: center;
-  border: 1px solid var(--border);
-}
-.detail-stat-val { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--accent); }
-.detail-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
-.detail-section { margin-bottom: 18px; }
-.detail-section-title {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text3);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.detail-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.detail-list { display: flex; flex-direction: column; gap: 6px; }
-.detail-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 12px;
-  background: var(--bg);
-  border-radius: 8px;
-  font-size: 13px;
-  border: 1px solid var(--border);
-  transition: background var(--transition);
-}
-.detail-row:hover { background: var(--bg2); }
-.detail-row .dr-date { color: var(--text2); font-size: 12px; }
-.detail-row .dr-val { font-weight: 600; color: var(--text); }
-.detail-row .dr-val.green { color: var(--accent3); }
-
-/* ─── TOAST ─── */
-.toast-wrap {
-  position: fixed;
-  top: 80px; right: 20px;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.summary-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.04));
   pointer-events: none;
 }
-.toast {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 18px;
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 280px;
-  max-width: 360px;
-  animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
-  pointer-events: all;
-  font-size: 14px;
-  font-weight: 500;
+.summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
-.toast.removing { animation: toastOut 0.3s ease forwards; }
-@keyframes toastIn { from { opacity: 0; transform: translateX(60px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
-@keyframes toastOut { to { opacity: 0; transform: translateX(60px) scale(0.9); } }
-.toast-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
-.toast.success .toast-icon { background: rgba(16,185,129,0.15); color: #10b981; }
-.toast.error .toast-icon { background: rgba(239,68,68,0.15); color: #ef4444; }
-.toast.info .toast-icon { background: rgba(59,130,246,0.15); color: #3b82f6; }
-.toast.warn .toast-icon { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.summary-card:nth-child(1) { animation-delay: 0.05s; border-top: 3px solid var(--accent2); }
+.summary-card:nth-child(2) { animation-delay: 0.1s; border-top: 3px solid var(--green); }
+.summary-card:nth-child(3) { animation-delay: 0.15s; border-top: 3px solid var(--accent); }
+.summary-card:nth-child(4) { animation-delay: 0.2s; border-top: 3px solid var(--red); }
+.summary-icon {
+  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.summary-icon svg { width: 20px; height: 20px; }
+.summary-icon.blue { background: var(--accent2-light); color: var(--accent2); }
+.summary-icon.green { background: var(--green-light); color: var(--green); }
+.summary-icon.orange { background: var(--accent-light); color: var(--accent); }
+.summary-icon.red { background: var(--red-light); color: var(--red); }
+.summary-label {
+  font-size: 0.75rem; font-weight: 500; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px;
+}
+.summary-value {
+  font-family: var(--font-display); font-size: 1.55rem; font-weight: 800;
+  color: var(--text-primary); letter-spacing: -0.02em; line-height: 1;
+}
+.summary-subtext {
+  font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;
+}
 
-/* ─── LOADING ─── */
-.loading-screen {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+/* ============================
+   CONTENT GRID
+============================ */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
-  transition: opacity 0.4s, visibility 0.4s;
+  margin-bottom: 20px;
 }
-.loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-.loading-logo { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
-.loading-logo span { color: var(--accent); }
-.loader {
-  width: 40px; height: 40px;
-  border: 3px solid var(--border);
+.content-full { grid-column: 1 / -1; }
+
+/* ============================
+   PANEL CARD
+============================ */
+.panel {
+  background: var(--bg-card);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: fadeSlideUp 0.5s ease both;
+  transition: box-shadow var(--transition);
+}
+.panel:hover { box-shadow: var(--shadow-md); }
+.panel-head {
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title {
+  font-family: var(--font-display); font-size: 0.9rem; font-weight: 700;
+  color: var(--text-primary); display: flex; align-items: center; gap: 8px;
+}
+.panel-title-icon {
+  width: 28px; height: 28px; border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+}
+.panel-title-icon svg { width: 14px; height: 14px; }
+.panel-title-icon.blue { background: var(--accent2-light); color: var(--accent2); }
+.panel-title-icon.green { background: var(--green-light); color: var(--green); }
+.panel-title-icon.orange { background: var(--accent-light); color: var(--accent); }
+.panel-title-icon.purple { background: var(--purple-light); color: var(--purple); }
+.panel-badge {
+  font-size: 0.72rem; font-weight: 600; padding: 2px 10px;
+  border-radius: 20px; background: var(--accent-light); color: var(--accent);
+}
+.panel-body { padding: 20px 22px; }
+.panel-body-scroll { max-height: 320px; overflow-y: auto; padding: 0; }
+.panel-body-scroll::-webkit-scrollbar { width: 4px; }
+.panel-body-scroll::-webkit-scrollbar-track { background: transparent; }
+.panel-body-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+/* ============================
+   TABLE
+============================ */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead tr {
+  background: var(--bg-primary);
+}
+.data-table th {
+  padding: 10px 16px;
+  text-align: left; font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.data-table td {
+  padding: 12px 16px;
+  font-size: 0.83rem; color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: var(--bg-primary); }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+}
+.status-badge.present { background: var(--green-light); color: var(--green); }
+.status-badge.absent { background: var(--red-light); color: var(--red); }
+.status-badge.paid { background: var(--green-light); color: var(--green); }
+.status-badge.pending { background: var(--accent-light); color: var(--accent); }
+.status-badge::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor;
+}
+
+/* ============================
+   PAYMENT LIST
+============================ */
+.payment-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  position: relative;
+}
+.payment-item:last-child { border-bottom: none; }
+.payment-item:hover { background: var(--bg-primary); }
+.payment-item.recent::before {
+  content: 'NEW';
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  background: var(--green); color: white;
+  font-size: 0.6rem; font-weight: 700;
+  padding: 2px 5px; border-radius: 0 4px 4px 0;
+  letter-spacing: 0.06em;
+}
+.payment-left { display: flex; align-items: center; gap: 12px; }
+.payment-icon-wrap {
+  width: 36px; height: 36px; border-radius: var(--radius-xs);
+  background: var(--green-light); color: var(--green);
+  display: flex; align-items: center; justify-content: center;
+}
+.payment-icon-wrap svg { width: 16px; height: 16px; }
+.payment-label { font-size: 0.83rem; font-weight: 500; color: var(--text-primary); }
+.payment-date { font-size: 0.73rem; color: var(--text-muted); margin-top: 1px; }
+.payment-amount { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--green); }
+
+/* ============================
+   OVERTIME TABLE
+============================ */
+.ot-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 22px; border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.ot-item:last-child { border-bottom: none; }
+.ot-item:hover { background: var(--bg-primary); }
+.ot-date { font-size: 0.82rem; color: var(--text-secondary); font-weight: 500; }
+.ot-hours {
+  font-family: var(--font-display); font-size: 0.88rem; font-weight: 700;
+  color: var(--accent); background: var(--accent-light);
+  padding: 2px 10px; border-radius: 20px;
+}
+
+/* ============================
+   SALARY BREAKDOWN
+============================ */
+.salary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.salary-row:last-child { border-bottom: none; }
+.salary-row-label { font-size: 0.83rem; color: var(--text-secondary); }
+.salary-row-value {
+  font-family: var(--font-display); font-size: 0.92rem; font-weight: 700;
+}
+.salary-row-value.total { color: var(--accent2); font-size: 1.05rem; }
+.salary-row-value.paid { color: var(--green); }
+.salary-row-value.pending { color: var(--red); }
+.salary-divider {
+  height: 1px; background: var(--border-strong);
+  margin: 8px 0;
+}
+
+/* ============================
+   DOWNLOAD SLIP
+============================ */
+.download-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, var(--accent2), var(--purple));
+  color: white; font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all var(--transition);
+  box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+}
+.download-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
+.download-btn svg { width: 14px; height: 14px; }
+
+/* ============================
+   EMPTY STATE
+============================ */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--text-muted);
+}
+.empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state p { font-size: 0.85rem; }
+
+/* ============================
+   LOADING OVERLAY
+============================ */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg-primary);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; transition: opacity 0.4s ease;
+}
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loader-ring {
+  width: 52px; height: 52px;
+  border: 3px solid var(--border-strong);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+.loading-text {
+  font-family: var(--font-display); font-size: 0.9rem; font-weight: 600;
+  color: var(--text-muted);
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ─── EMPTY STATE ─── */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  gap: 14px;
-  text-align: center;
+/* ============================
+   TOAST NOTIFICATIONS
+============================ */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.empty-state-icon { font-size: 48px; opacity: 0.25; }
-.empty-state-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text2); }
-.empty-state-sub { font-size: 14px; color: var(--text3); max-width: 280px; }
-
-/* ─── CONFIRM DIALOG ─── */
-.confirm-modal { max-width: 380px; }
-.confirm-icon { width: 56px; height: 56px; border-radius: 16px; background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #ef4444; margin: 0 auto 16px; }
-
-/* ─── PAYMENT & ATTENDANCE MODALS ─── */
-.quick-add-row { display: flex; gap: 10px; align-items: flex-end; }
-.quick-add-row .form-group { flex: 1; }
-
-/* ─── ATTENDANCE GRID ─── */
-.att-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
-.att-cell {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px;
-  text-align: center;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.att-cell.present { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981; font-weight: 600; }
-.att-cell.absent { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #ef4444; }
-.att-cell:hover { transform: scale(1.04); }
-.att-cell .att-date { font-weight: 600; font-size: 13px; }
-.att-cell .att-status { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-
-/* ─── LOGIN PAGE ─── */
-.login-wrap {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: var(--bg);
-}
-.login-box {
-  background: var(--surface);
-  backdrop-filter: blur(30px);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  padding: 44px 40px;
-  width: 100%;
-  max-width: 400px;
+.toast {
+  min-width: 280px; max-width: 340px;
+  background: var(--bg-card); backdrop-filter: var(--blur);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
   box-shadow: var(--shadow-lg);
-  animation: fadeInUp 0.4s ease;
+  animation: toastIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  cursor: pointer;
 }
-.login-header { text-align: center; margin-bottom: 32px; }
+.toast.removing { animation: toastOut 0.3s ease both; }
+.toast-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.toast-icon svg { width: 15px; height: 15px; }
+.toast-icon.success { background: var(--green-light); color: var(--green); }
+.toast-icon.info { background: var(--accent2-light); color: var(--accent2); }
+.toast-icon.warn { background: var(--accent-light); color: var(--accent); }
+.toast-content { flex: 1; }
+.toast-title { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+.toast-msg { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+@keyframes toastIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(120%); opacity: 0; }
+}
+
+/* ============================
+   MODAL
+============================ */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+.modal-backdrop.hidden { display: none; }
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  width: 100%; max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) both;
+}
+@keyframes modalIn {
+  from { transform: scale(0.92) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-title {
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 700;
+  color: var(--text-primary); margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-close {
+  width: 28px; height: 28px; border-radius: var(--radius-xs);
+  background: var(--bg-primary); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); transition: all var(--transition);
+}
+.modal-close:hover { background: var(--red-light); color: var(--red); }
+.modal-close svg { width: 13px; height: 13px; }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+.form-input {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg-primary); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs); color: var(--text-primary);
+  font-family: var(--font-body); font-size: 0.85rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+.form-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.form-input::placeholder { color: var(--text-muted); }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+.btn {
+  padding: 9px 20px; border-radius: var(--radius-xs);
+  font-family: var(--font-body); font-size: 0.83rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition); border: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent2), var(--purple));
+  color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.4); }
+.btn-ghost {
+  background: var(--bg-primary); color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+}
+.btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+
+/* ============================
+   FLOATING ACTIONS
+============================ */
+.fab-group {
+  position: fixed; bottom: 28px; left: 28px; z-index: 200;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+}
+.fab {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 24px;
+  font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all var(--transition); color: white;
+  box-shadow: var(--shadow-md);
+}
+.fab-wa { background: #25d366; }
+.fab-wa:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 24px rgba(37,211,102,0.35); }
+.fab-admin { background: linear-gradient(135deg, var(--accent2), var(--purple)); }
+.fab-admin:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 24px rgba(59,130,246,0.35); }
+.fab svg { width: 16px; height: 16px; }
+
+/* ============================
+   INACTIVITY INDICATOR
+============================ */
+.inactivity-warning {
+  position: fixed; top: 80px; right: 20px; z-index: 300;
+  background: var(--accent-light); border: 1px solid var(--accent);
+  border-radius: var(--radius-sm); padding: 10px 16px;
+  font-size: 0.78rem; color: var(--accent); font-weight: 600;
+  display: none; align-items: center; gap: 6px;
+  animation: slideDown 0.3s ease;
+}
+.inactivity-warning.show { display: flex; }
+@keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ============================
+   SALARY SLIP PRINT
+============================ */
+@media print {
+  body * { visibility: hidden; }
+  #salary-slip, #salary-slip * { visibility: visible; }
+  #salary-slip {
+    position: fixed; inset: 0; z-index: 9999;
+    background: white; color: black;
+    padding: 20px;
+    page-break-after: avoid;
+    page-break-before: avoid;
+  }
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+}
+
+/* ============================
+   ANIMATIONS
+============================ */
+@keyframes fadeSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-1 { animation-delay: 0.1s; }
+.animate-2 { animation-delay: 0.2s; }
+.animate-3 { animation-delay: 0.3s; }
+.animate-4 { animation-delay: 0.4s; }
+
+/* ============================
+   LOGIN PAGE
+============================ */
+.login-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; position: relative; z-index: 1;
+}
+.login-card {
+  background: var(--bg-card);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  width: 100%; max-width: 400px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeSlideUp 0.5s ease both;
+}
+.login-logo {
+  text-align: center; margin-bottom: 28px;
+}
 .login-logo-icon {
-  width: 60px; height: 60px;
-  background: linear-gradient(135deg, #f97316, #ea580c);
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--accent), #fb923c);
   border-radius: 16px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 26px; color: white;
-  margin: 0 auto 14px;
-  box-shadow: 0 8px 24px rgba(249,115,22,0.4);
+  margin: 0 auto 12px;
+  box-shadow: 0 8px 24px rgba(249,115,22,0.35);
 }
-.login-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
-.login-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
-.login-form { display: flex; flex-direction: column; gap: 16px; }
-.btn-login-submit {
-  height: 46px;
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 14px rgba(249,115,22,0.4);
-  margin-top: 4px;
+.login-logo-icon svg { width: 28px; height: 28px; color: white; }
+.login-title {
+  font-family: var(--font-display); font-size: 1.3rem; font-weight: 800;
+  color: var(--text-primary); letter-spacing: -0.02em;
 }
-.btn-login-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249,115,22,0.5); }
-.login-hint {
-  text-align: center;
-  font-size: 12px;
-  color: var(--text3);
-  margin-top: 8px;
-  background: var(--bg2);
-  border-radius: 8px;
+.login-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+.login-actions { margin-top: 22px; }
+.btn-login {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), #fb923c);
+  color: white; padding: 12px;
+  border-radius: var(--radius-sm); border: none;
+  font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+  box-shadow: 0 4px 14px rgba(249,115,22,0.35);
+}
+.btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249,115,22,0.45); }
+.login-divider { text-align: center; margin: 14px 0; font-size: 0.75rem; color: var(--text-muted); }
+.demo-note {
+  text-align: center; margin-top: 16px;
+  font-size: 0.75rem; color: var(--text-muted);
+  background: var(--bg-primary); border-radius: var(--radius-xs);
   padding: 8px 12px;
 }
-/* ─── SCREEN POPUP ─── */
-@keyframes popupIn {
-  from { opacity: 0; transform: scale(0.9) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
+.demo-note strong { color: var(--accent); }
 
-@media print {
-  .slip-only { display: block !important; }
-  body > *:not(#slip-print) { display: none !important; }
-  #slip-print { display: block !important; }
-}
-#slip-print {
-  display: none;
-  padding: 40px;
-  font-family: 'DM Sans', sans-serif;
-}
-
-/* ─── ANIMATIONS ─── */
-.animate-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
-.animate-in:nth-child(1) { animation-delay: 0.05s; }
-.animate-in:nth-child(2) { animation-delay: 0.1s; }
-.animate-in:nth-child(3) { animation-delay: 0.15s; }
-.animate-in:nth-child(4) { animation-delay: 0.2s; }
-
-/* ─── OVERLAY ─── */
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 99;
-}
+/* ============================
+   RESPONSIVE
+============================ */
 @media (max-width: 900px) {
-  .sidebar.open ~ #sidebarOverlay,
-  .sidebar-overlay.active { display: block; }
-}
-
-/* ─── RESPONSIVE ─── */
-@media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); }
-  .sidebar-overlay { display: block; }
-  .main-content { margin-left: 0; }
-  .menu-toggle { display: flex; }
-  .page { padding: 16px; }
-  .topbar { padding: 0 16px; }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+  .profile-card-actions { flex-direction: row; }
 }
 @media (max-width: 600px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; }
-  .form-grid { grid-template-columns: 1fr; }
-  .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .modal { border-radius: 16px; }
-  .detail-stats { grid-template-columns: 1fr 1fr 1fr; }
+  .topbar { padding: 0 16px; }
+  .topbar-worker-name { display: none; }
+  .brand-name { display: none; }
+  .main { padding: 16px 14px 60px; }
+  .summary-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .summary-card { padding: 16px 14px; }
+  .summary-value { font-size: 1.25rem; }
+  .profile-card { flex-direction: column; align-items: flex-start; padding: 22px 20px; }
+  .profile-card-actions { flex-direction: row; flex-wrap: wrap; }
+  .fab-group { bottom: 16px; left: 16px; }
+  .toast-container { right: 12px; bottom: 12px; }
+  .logout-btn span { display: none; }
 }
-@media (max-width: 420px) {
-  .stats-grid { grid-template-columns: 1fr; }
-  .detail-stats { grid-template-columns: 1fr; }
+
+/* ============================
+   TABS
+============================ */
+.tab-bar {
+  display: flex; gap: 4px; background: var(--bg-primary);
+  padding: 4px; border-radius: var(--radius-xs); margin-bottom: 16px;
 }
+.tab-btn {
+  flex: 1; padding: 7px 12px; border-radius: 6px;
+  font-size: 0.78rem; font-weight: 600; border: none;
+  cursor: pointer; transition: all var(--transition);
+  background: transparent; color: var(--text-muted);
+  font-family: var(--font-body);
+}
+.tab-btn.active {
+  background: var(--bg-card); color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ============================
+   PROGRESS BAR
+============================ */
+.progress-bar-wrap { margin-top: 12px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-muted); margin-bottom: 6px; }
+.progress-track { height: 6px; background: var(--bg-primary); border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1) 0.3s; }
+.progress-fill.green { background: linear-gradient(90deg, var(--green), #34d399); }
+.progress-fill.red { background: linear-gradient(90deg, var(--red), #f87171); }
+
 #google_translate_element{
   display: flex;
   align-items: center;
-  max-width: 140px;
-  overflow: hidden;
+  flex-shrink: 0;
 }
-
-.goog-te-gadget{
+#google_translate_element .goog-te-gadget {
+  font-family: var(--font-body) !important;
   font-size: 0 !important;
+  color: transparent !important;
 }
-
-.goog-te-gadget select{
-  max-width: 100%;
-  padding: 6px 10px;
+#google_translate_element .goog-te-gadget select {
+  padding: 5px 8px;
   border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 13px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
   cursor: pointer;
+  outline: none;
+  backdrop-filter: var(--blur);
+  max-width: 120px;
 }
-@media (max-width: 768px){
-  #google_translate_element{
-    max-width: 100px;
-  }
-
-  .goog-te-gadget select{
-    font-size: 12px;
-    padding: 5px 8px;
-  }
+#google_translate_element .goog-te-gadget-simple {
+  background: transparent !important;
+  border: none !important;
 }
-.nav-right{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
+@media (max-width: 600px) {
+  #google_translate_element .goog-te-gadget select {
+    max-width: 80px;
+    font-size: 0.68rem;
+    padding: 4px 5px;
+  }
 }
 </style>
 </head>
-
 <body>
 
-<!-- Loading Screen -->
-<div class="loading-screen" id="loadingScreen">
-  <div class="loading-logo">PS<span>Construction</span></div>
-  <div class="loader"></div>
-  <p style="color:var(--text2);font-size:13px;">Loading your dashboard…</p>
+<!-- Animated Background -->
+<div class="bg-canvas">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader-ring"></div>
+  <div class="loading-text">Loading your workspace…</div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Inactivity Warning -->
+<div class="inactivity-warning" id="inactivityWarn">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+  Auto-logout in <span id="inactivityCountdown">60</span>s
+</div>
+
+<!-- Floating Actions -->
+<div class="fab-group" id="fabGroup" style="display:none">
+  <button class="fab fab-wa" onclick="openWhatsApp()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.559 4.14 1.535 5.874L.057 23.215a.75.75 0 00.916.928l5.453-1.43A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.742 9.742 0 01-4.95-1.344l-.356-.21-3.234.848.864-3.153-.228-.362A9.75 9.75 0 1112 21.75z"/></svg>
+    WhatsApp Support
+  </button>
+  <button class="fab fab-admin" onclick="showContactAdmin()">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
+    Contact Admin
+  </button>
 </div>
 
 <!-- LOGIN PAGE -->
-<div id="adminLoginPage" class="login-wrap">
-  <div class="login-box">
-    <div class="login-header">
-      <div class="login-logo-icon"><i class="fas fa-hard-hat"></i></div>
-      <div class="login-title">PS Construction Admin</div>
-      <div class="login-sub">Labour Management System</div>
-    </div>
-    <div class="login-form">
-      <div class="form-group">
-        <label class="form-label">Username / Email</label>
-        <input type="text" class="form-input" id="adminEmail" placeholder="admin@psconstruction.com" >
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/></svg>
       </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="adminPass" placeholder="Enter password"  onkeydown="if(event.key==='Enter')doAdminLogin()">
-      </div>
-      <button class="btn-login-submit" onclick="doAdminLogin()">
-        <i class="fas fa-sign-in-alt" style="margin-right:8px"></i> Sign In to Dashboard
-      </button>
+      <div class="login-title">PS Panel</div>
+      <div class="login-sub">Construction Labour Management System</div>
     </div>
- <div class="login-hint">Use your authorized admin Firebase credentials</div>
+    <!-- Step 1: Unique ID -->
+    <div id="loginStep1">
+      <div class="form-group">
+        <label class="form-label">Worker ID (e.g. PSC101)</label>
+        <input class="form-input" id="loginWorkerId" type="text" placeholder="e.g. PSC001" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')checkWorkerId()"/>
+      </div>
+      <div class="login-actions">
+        <button class="btn-login" onclick="checkWorkerId()">login →</button>
+      </div>
+      <div class="demo-note" style="margin-top:14px">
+        Get your Unique Worker ID from the admin. After first login, you can set your own password.
+      </div>
+    </div>
+    <!-- Step 2: Password (shown after ID validated) -->
+    <div id="loginStep2" style="display:none">
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="color:var(--accent)">Worker ID: <span id="loginWorkerIdDisplay">—</span></label>
+      </div>
+      <div class="form-group" id="passwordFieldWrap">
+        <label class="form-label" id="passwordLabel">Password</label>
+        <input class="form-input" id="loginPassword" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="form-group" id="newPassWrap" style="display:none">
+        <label class="form-label">Set New Password (min 4 characters)</label>
+        <input class="form-input" id="setNewPass" type="password" placeholder="New password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <input class="form-input" id="setConfirmPass" type="password" placeholder="Confirm password" style="margin-top:8px" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="login-actions">
+        <button class="btn-login" id="loginBtn" onclick="doLogin()">Login</button>
+      </div>
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="backToStep1()" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;text-decoration:underline">← Go Back</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Sidebar Overlay -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-<!-- App Container -->
-<div id="adminApp" style="display:none">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark">
-        <div class="logo-icon"><i class="fas fa-hard-hat"></i></div>
-        <div class="logo-text">
-          <div class="brand">PS Construction</div>
-          <div class="tagline">Worker Management</div>
-        </div>
+<!-- MAIN DASHBOARD -->
+<div id="dashboardPage" class="layout" style="display:none">
+  <!-- Topbar -->
+  <nav class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-icon" style="width:42px;height:42px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(249,115,22,0.35);">
+        <!-- PS Construction Hard Hat Logo -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="34" height="34">
+          <!-- Hard hat base -->
+          <ellipse cx="20" cy="26" rx="14" ry="5" fill="rgba(255,255,255,0.25)"/>
+          <!-- Hat dome -->
+          <path d="M6 26 Q6 10 20 8 Q34 10 34 26 Z" fill="white" opacity="0.95"/>
+          <!-- Brim -->
+          <rect x="4" y="24" width="32" height="4" rx="2" fill="white"/>
+          <!-- PS text on hat -->
+          <text x="20" y="22" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#f97316">PS</text>
+          <!-- Stripe on hat -->
+          <path d="M10 26 Q20 18 30 26" stroke="#f97316" stroke-width="1.5" fill="none" opacity="0.5"/>
+        </svg>
       </div>
+      <div class="brand-name" id="animatedBrandName"></div>
     </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section-label" style="margin-top:8px;">Language</div>
-      <div id="google_translate_element"></div>
-      <div class="nav-section-label" style="margin-top:8px;">Main</div>
-      <div class="nav-item active" onclick="showPage('dashboard')">
-        <i class="fas fa-chart-line"></i><span>Dashboard</span>
-      </div>
-      <div class="nav-item" onclick="showPage('labours')">
-        <i class="fas fa-users"></i><span>Labour Registry</span>
-      </div>
-      <div class="nav-section-label" style="margin-top:8px;">Operations</div>
-      <div class="nav-item" onclick="showPage('attendance')">
-        <i class="fas fa-calendar-check"></i><span>Attendance</span>
-      </div>
-      <div class="nav-item" onclick="showPage('overtime')">
-        <i class="fas fa-clock"></i><span>Overtime</span>
-      </div>
-      <div class="nav-item" onclick="showPage('payments')">
-        <i class="fas fa-wallet"></i><span>Payments</span>
-      </div>
-      <div class="nav-section-label" style="margin-top:8px;">Reports</div>
-      <div class="nav-item" onclick="showPage('salary')">
-        <i class="fas fa-file-invoice-dollar"></i><span>Salary Report</span>
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="nav-item" onclick="logout()" style="color:rgba(239,68,68,0.8);">
-        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN CONTENT -->
-  <div class="main-content">
-
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-      <div class="topbar-title" id="pageTitle">Dashboard</div>
-      <div class="topbar-search">
-        <i class="fas fa-search"></i>
-        <input type="text" id="globalSearch" placeholder="Search labourers…" oninput="handleGlobalSearch(this.value)">
-      </div>
-      <div class="topbar-actions">
+    <div id="google_translate_element"></div>
+    <div class="topbar-right">
       
-        <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-          <i class="fas fa-moon" id="themeIcon"></i>
+      <div class="topbar-worker-name" id="topbarName">Loading...</div>
+      <div class="topbar-avatar" id="topbarAvatar" onclick="showEditProfile()">R</div>
+
+      <button class="topbar-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
+        <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>
+      </button>
+      <button class="topbar-btn logout-btn" onclick="doLogout()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+        <span>Logout</span>
+      </button>
+
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- Profile Hero -->
+    <div class="profile-card" id="profileCard">
+      <div class="profile-avatar-large" id="profileAvatarLarge">R</div>
+      <div class="profile-info">
+        <div class="profile-name" id="profileName">Ramesh Kumar</div>
+        <div class="profile-id" id="profileIdBadge">ID: WRK-001</div>
+        <div class="profile-meta">
+          <div class="profile-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
+            <span id="profilePhone">+91 98765 43210</span>
+          </div>
+          <div class="profile-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+            <span id="profileSite">Site A – Highway Project</span>
+          </div>
+          <div class="profile-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+            <span id="profileRole">Mason – Skilled Labour</span>
+          </div>
+        </div>
+      </div>
+      <div class="profile-card-actions">
+        <button class="profile-action-btn" onclick="refreshDashboard()" id="refreshBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+          Refresh
         </button>
-        <button class="icon-btn" onclick="refreshData()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
-        <div class="avatar" title="Admin">PS</div>
+        <button class="profile-action-btn" onclick="showChangePassword()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+          Change Password
+        </button>
       </div>
-    </header>
+    </div>
 
-    <!-- ── PAGE: DASHBOARD ── -->
-    <section class="page active" id="page-dashboard">
-      <div class="stats-grid">
-        <div class="stat-card animate-in" style="--card-color:rgba(249,115,22,0.1);--card-accent:#f97316;">
-          <div class="stat-card-icon"><i class="fas fa-users"></i></div>
-          <div class="stat-card-label">Total Workers</div>
-          <div class="stat-card-value" id="statWorkers">0</div>
-          <div class="stat-card-sub">Active on all sites</div>
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon blue">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
         </div>
-        <div class="stat-card animate-in" style="--card-color:rgba(59,130,246,0.1);--card-accent:#3b82f6;">
-          <div class="stat-card-icon"><i class="fas fa-rupee-sign"></i></div>
-          <div class="stat-card-label">Total Salary</div>
-          <div class="stat-card-value" id="statSalary">₹0</div>
-          <div class="stat-card-sub">Gross payable</div>
-        </div>
-        <div class="stat-card animate-in" style="--card-color:rgba(16,185,129,0.1);--card-accent:#10b981;">
-          <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-card-label">Total Paid</div>
-          <div class="stat-card-value" id="statPaid">₹0</div>
-          <div class="stat-card-sub">Payments made</div>
-        </div>
-        <div class="stat-card animate-in" style="--card-color:rgba(239,68,68,0.1);--card-accent:#ef4444;">
-          <div class="stat-card-icon"><i class="fas fa-hourglass-half"></i></div>
-          <div class="stat-card-label">Pending</div>
-          <div class="stat-card-value" id="statPending">₹0</div>
-          <div class="stat-card-sub">Yet to be paid</div>
-        </div>
+        <div class="summary-label">Working Days</div>
+        <div class="summary-value" id="cardDays">0</div>
+        <div class="summary-subtext">This month</div>
       </div>
-      <div class="section-header">
-        <div class="section-title">Recent Workers</div>
-        <div class="section-actions">
-          <button class="btn btn-primary btn-sm" onclick="openAddModal()">
-            <i class="fas fa-plus"></i> Add Labour
-          </button>
+      <div class="summary-card">
+        <div class="summary-icon green">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
+        <div class="summary-label">Total Salary</div>
+        <div class="summary-value" id="cardTotal">₹0</div>
+        <div class="summary-subtext">Gross earnings</div>
       </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Name</th><th>Type</th><th>Site</th><th>Daily Rate</th><th>Status</th><th>Action</th>
-            </tr></thead>
-            <tbody id="dashboardTable"></tbody>
-          </table>
+      <div class="summary-card">
+        <div class="summary-icon orange">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75"/></svg>
         </div>
+        <div class="summary-label">Total Paid</div>
+        <div class="summary-value" id="cardPaid">₹0</div>
+        <div class="summary-subtext">Amount received</div>
       </div>
-    </section>
+      <div class="summary-card">
+        <div class="summary-icon red">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+        </div>
+        <div class="summary-label">Pending Amount</div>
+        <div class="summary-value" id="cardPending">₹0</div>
+        <div class="summary-subtext">To be received</div>
+      </div>
+    </div>
 
-    <!-- ── PAGE: LABOUR REGISTRY ── -->
-    <section class="page" id="page-labours">
-      <div class="section-header">
-        <div class="section-title">Labour Registry</div>
-        <div class="section-actions">
-          <button class="btn btn-primary btn-sm" onclick="openAddModal()">
-            <i class="fas fa-plus"></i> Add Labour
-          </button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <div class="table-controls">
-          <div class="table-search">
-            <i class="fas fa-search"></i>
-            <input type="text" id="labourSearch" placeholder="Search…" oninput="filterLabourTable(this.value)">
+    <!-- Salary Panel -->
+    <div class="content-grid">
+      <div class="panel animate-1" style="animation-delay:0.25s">
+        <div class="panel-head">
+          <div class="panel-title">
+            <div class="panel-title-icon green">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33"/></svg>
+            </div>
+            Salary Breakdown
           </div>
-          <select class="table-select" id="siteFilter" onchange="filterLabourTable()">
-            <option value="">All Sites</option>
-          </select>
-          <select class="table-select" id="typeFilter" onchange="filterLabourTable()">
-            <option value="">All Types</option>
-          </select>
-          <select class="table-select" id="sortBy" onchange="filterLabourTable()">
-            <option value="name">Sort: Name</option>
-            <option value="rate">Sort: Rate</option>
-            <option value="site">Sort: Site</option>
-          </select>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Worker ID</th>
-              <th onclick="setSortKey('name')">Name <span class="sort-icon">↕</span></th>
-              <th>Phone</th>
-              <th>Type</th>
-              <th onclick="setSortKey('site')">Site <span class="sort-icon">↕</span></th>
-              <th onclick="setSortKey('rate')">Daily Rate <span class="sort-icon">↕</span></th>
-              <th>Added</th>
-              <th>Actions</th>
-            </tr></thead>
-            <tbody id="labourTable"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PAGE: ATTENDANCE ── -->
-    <section class="page" id="page-attendance">
-      <div class="section-header">
-        <div class="section-title">Attendance Tracking</div>
-        <div class="section-actions">
-          <input type="date" class="form-input" id="attDate" style="width:160px;height:38px;" value="">
-          <button class="btn btn-primary btn-sm" onclick="openBulkAttModal()">
-            <i class="fas fa-calendar-plus"></i> Mark Attendance
+          <button class="download-btn" onclick="downloadSalarySlip()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Salary Slip
           </button>
         </div>
-      </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Worker ID</th><th>Worker Name</th><th>Site</th><th>Date</th><th>Status</th><th>Action</th>
-            </tr></thead>
-            <tbody id="attendanceTable"></tbody>
-          </table>
+        <div class="panel-body">
+          <div class="salary-row">
+            <div class="salary-row-label">Basic Wages</div>
+            <div class="salary-row-value" id="slipBasic">₹0</div>
+          </div>
+          <div class="salary-row">
+            <div class="salary-row-label">Overtime Amount</div>
+            <div class="salary-row-value" id="slipOT">₹0</div>
+          </div>
+          <div class="salary-row">
+            <div class="salary-row-label">Bonus / Allowances</div>
+            <div class="salary-row-value" id="slipBonus">₹0</div>
+          </div>
+          <div class="salary-divider"></div>
+          <div class="salary-row">
+            <div class="salary-row-label" style="font-weight:600">Total Salary</div>
+            <div class="salary-row-value total" id="slipTotal">₹0</div>
+          </div>
+          <div class="salary-row">
+            <div class="salary-row-label">Amount Paid</div>
+            <div class="salary-row-value paid" id="slipPaid">₹0</div>
+          </div>
+          <div class="salary-row">
+            <div class="salary-row-label">Balance Pending</div>
+            <div class="salary-row-value pending" id="slipPending">₹0</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-label"><span>Payment Progress</span><span id="progressPercent">0%</span></div>
+            <div class="progress-track"><div class="progress-fill green" id="progressFill" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
-    </section>
 
-    <!-- ── PAGE: OVERTIME ── -->
-    <section class="page" id="page-overtime">
-      <div class="section-header">
-        <div class="section-title">Overtime Management</div>
-        <div class="section-actions">
-          <button class="btn btn-primary btn-sm" onclick="openOTModal()">
-            <i class="fas fa-plus"></i> Add Overtime
-          </button>
+      <!-- Payment History -->
+      <div class="panel animate-2" style="animation-delay:0.3s">
+        <div class="panel-head">
+          <div class="panel-title">
+            <div class="panel-title-icon orange">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+            </div>
+            Payment History
+          </div>
+          <span class="panel-badge" id="paymentCountBadge">0 records</span>
         </div>
-      </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Worker</th><th>Date</th><th>OT Hours</th><th>OT Rate</th><th>OT Amount</th><th>Action</th>
-            </tr></thead>
-            <tbody id="overtimeTable"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PAGE: PAYMENTS ── -->
-    <section class="page" id="page-payments">
-      <div class="section-header">
-        <div class="section-title">Payment Management</div>
-        <div class="section-actions">
-          <button class="btn btn-primary btn-sm" onclick="openPaymentModal()">
-            <i class="fas fa-plus"></i> Record Payment
-          </button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Worker</th><th>Payment Date</th><th>Amount</th><th>Method</th><th>Note</th><th>Action</th>
-            </tr></thead>
-            <tbody id="paymentTable"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PAGE: SALARY REPORT ── -->
-    <section class="page" id="page-salary">
-      <div class="section-header">
-        <div class="section-title">Salary Report</div>
-        <div class="section-actions">
-          <button class="btn btn-secondary btn-sm" onclick="printAllSlips()">
-            <i class="fas fa-print"></i> Print Report
-          </button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Worker</th><th>Days Present</th><th>Base Salary</th><th>OT Amount</th>
-              <th>Total Salary</th><th>Paid</th><th>Pending</th><th>Extra Payment</th><th>Actions</th>
-            </tr></thead>
-            <tbody id="salaryTable"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-  </div><!-- end main-content -->
-
-<!-- Modals inside adminApp -->
-
-<script>
-// ─── ADMIN AUTH ───
-// DELETE PIN for labour deletion
-const DELETE_PIN = '1234';
-
-// Inactivity logout (5 minutes)
-let adminInactivityTimer = null;
-const ADMIN_INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
-
-function resetAdminInactivity() {
-  if (!sessionStorage.getItem('admin_logged_in')) return;
-  clearTimeout(adminInactivityTimer);
-  adminInactivityTimer = setTimeout(() => {
-    showScreenPopup('⏱️ Session Expired', 'Aap 5 minute se inactive hain. Logout ho gaye.', 'warn', () => {
-      doActualLogout();
-    });
-  }, ADMIN_INACTIVITY_LIMIT);
-}
-
-function startAdminInactivityTimer() {
-  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt =>
-    document.addEventListener(evt, resetAdminInactivity, { passive: true })
-  );
-  resetAdminInactivity();
-}
-
-function stopAdminInactivityTimer() {
-  clearTimeout(adminInactivityTimer);
-  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt =>
-    document.removeEventListener(evt, resetAdminInactivity)
-  );
-}
-function doAdminLogin() {
-  const email = document.getElementById('adminEmail').value.trim();
-  const pass  = document.getElementById('adminPass').value;
-
-  firebase.auth().signInWithEmailAndPassword(email, pass)
-    .then(() => {
-      sessionStorage.setItem('admin_logged_in', '1');
-
-      document.getElementById('adminLoginPage').style.display = 'none';
-      document.getElementById('adminApp').style.display = 'block';
-
-      startAdminInactivityTimer();
-
-      initAdminApp().then(() => {
-        showToast('Welcome Admin! 👷', 'success');
-      });
-    })
-    .catch((error) => {
-      console.error(error);
-      showToast('Invalid Firebase credentials', 'error');
-    });
-}
-function doActualLogout() {
-  sessionStorage.removeItem('admin_logged_in');
-  stopAdminInactivityTimer();
-  document.getElementById('adminApp').style.display = 'none';
-  document.getElementById('adminLoginPage').style.display = 'flex';
-  document.getElementById('adminEmail').value = '';
-  document.getElementById('adminPass').value = '';
-}
-
-// Session is cleared on page load via the main DOMContentLoaded handler
-
-// ─── SCREEN POPUP (replaces alert()) ───
-function showScreenPopup(title, msg, type = 'info', callback = null) {
-  const existing = document.getElementById('screenPopupOverlay');
-  if (existing) existing.remove();
-  const colors = { success:'#10b981', error:'#ef4444', warn:'#f59e0b', info:'#3b82f6' };
-  const icons = { success:'fa-check-circle', error:'fa-times-circle', warn:'fa-exclamation-triangle', info:'fa-info-circle' };
-  const overlay = document.createElement('div');
-  overlay.id = 'screenPopupOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease';
-  const c = colors[type] || colors.info;
-  const ic = icons[type] || icons.info;
-  overlay.innerHTML = `<div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);text-align:center">
-    <div style="width:60px;height:60px;border-radius:16px;background:${c}22;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px;color:${c}">
-      <i class="fas ${ic}"></i>
-    </div>
-    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:10px">${esc(title)}</div>
-    <div style="color:var(--text2);font-size:14px;margin-bottom:24px;line-height:1.6">${msg}</div>
-    <button onclick="document.getElementById('screenPopupOverlay').remove();if(window._popupCb){window._popupCb();window._popupCb=null;}" style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;border-radius:10px;padding:11px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">OK</button>
-  </div>`;
-  window._popupCb = callback || null;
-  document.body.appendChild(overlay);
-}
-
-// ─── PIN INPUT POPUP ───
-function showPinPopup(title, msg, onConfirm) {
-  const existing = document.getElementById('pinPopupOverlay');
-  if (existing) existing.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'pinPopupOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease';
-  overlay.innerHTML = `<div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:20px;padding:32px 28px;max-width:400px;width:100%;box-shadow:var(--shadow-lg);animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);text-align:center">
-    <div style="width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;color:#ef4444"><i class="fas fa-lock"></i></div>
-    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px">${esc(title)}</div>
-    <div style="color:var(--text2);font-size:13px;margin-bottom:18px">${esc(msg)}</div>
-    <input id="pinPopupInput" type="password" maxlength="10" placeholder="Delete PIN daalen" style="width:100%;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:4px;margin-bottom:16px" oninput="this.style.borderColor=''" onkeydown="if(event.key==='Enter')document.getElementById('pinConfirmBtn').click()">
-    <div style="display:flex;gap:10px;justify-content:center">
-      <button onclick="document.getElementById('pinPopupOverlay').remove()" style="flex:1;height:40px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-      <button id="pinConfirmBtn" onclick="
-        var v=document.getElementById('pinPopupInput').value;
-        if(v===window._pinExpected){document.getElementById('pinPopupOverlay').remove();if(window._pinCb){window._pinCb();window._pinCb=null;}}
-        else{document.getElementById('pinPopupInput').style.borderColor='#ef4444';document.getElementById('pinPopupInput').value='';document.getElementById('pinPopupInput').placeholder='Galat PIN!';}
-      " style="flex:1;height:40px;border-radius:9px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;font-size:13px;font-weight:600;cursor:pointer"><i class="fas fa-trash"></i> Delete</button>
-    </div>
-  </div>`;
-  window._pinExpected = DELETE_PIN;
-  window._pinCb = onConfirm;
-  document.body.appendChild(overlay);
-  setTimeout(() => document.getElementById('pinPopupInput')?.focus(), 100);
-}
-</script>
-
-
-
-<!-- Add/Edit Labour Modal -->
-<div class="modal-overlay" id="labourModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="labourModalTitle">Add Labour</div>
-      <button class="modal-close" onclick="closeModal('labourModal')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" class="form-input" id="labourName" placeholder="Enter full name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Labour Type</label>
-          <select class="form-input" id="labourType">
-            <option value="">Select type</option>
-            <option>Mason</option><option>Carpenter</option><option>Electrician</option>
-            <option>Plumber</option><option>Painter</option><option>Helper</option>
-            <option>Welder</option><option>Supervisor</option><option>Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Daily Rate (₹)</label>
-          <input type="number" class="form-input" id="labourRate" placeholder="e.g. 600">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Site Name</label>
-          <input type="text" class="form-input" id="labourSite" placeholder="Site / Project name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Join Date</label>
-          <input type="date" class="form-input" id="labourDate">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Phone</label>
-          <input type="tel" class="form-input" id="labourPhone" placeholder="Optional">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('labourModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveLabour()">
-        <i class="fas fa-save"></i> Save
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Detail Modal -->
-<div class="modal-overlay" id="detailModal">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <div class="modal-title">Worker Details</div>
-      <button class="modal-close" onclick="closeModal('detailModal')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" id="detailModalBody">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button>
-      <button class="btn btn-primary" id="printSlipBtn" onclick="printSlip()">
-        <i class="fas fa-print"></i> Salary Slip
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Attendance Modal -->
-<div class="modal-overlay" id="attendanceModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Mark Attendance</div>
-      <button class="modal-close" onclick="closeModal('attendanceModal')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Worker ID se Select Karen</label>
-          <select class="form-input" id="attWorker"><option value="">-- ID se Worker Chunen --</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Date</label>
-          <input type="date" class="form-input" id="attModalDate">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Status</label>
-          <select class="form-input" id="attStatus">
-            <option value="Present">Present</option>
-            <option value="Absent">Absent</option>
-            <option value="Half Day">Half Day</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('attendanceModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveAttendance()"><i class="fas fa-save"></i> Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- Overtime Modal -->
-<div class="modal-overlay" id="overtimeModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Record Overtime</div>
-      <button class="modal-close" onclick="closeModal('overtimeModal')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Worker</label>
-          <select class="form-input" id="otWorker" onchange="updateOTRate()"><option value="">Select worker</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Date</label>
-          <input type="date" class="form-input" id="otDate">
-        </div>
-        <div class="form-group">
-          <label class="form-label">OT Hours</label>
-          <input type="number" class="form-input" id="otHours" placeholder="e.g. 2" step="0.5" oninput="updateOTPreview()">
-        </div>
-        <div class="form-group">
-          <label class="form-label">OT Rate/hr (₹) <span style="font-size:10px;color:var(--text3)">(auto from salary)</span></label>
-          <input type="number" class="form-input" id="otRate" placeholder="Auto-calculated" readonly style="background:var(--bg2);color:var(--accent);font-weight:600;">
-        </div>
-        <div class="form-group full" id="otPreview" style="display:none">
-          <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px;font-size:13px;">
-            <strong>OT Amount Preview: </strong><span id="otAmtPreview" style="color:var(--accent3);font-weight:700;font-size:15px;">₹0</span>
+        <div class="panel-body-scroll" id="paymentHistoryList">
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+            <p>No payment records found</p>
           </div>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('overtimeModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveOT()"><i class="fas fa-save"></i> Save</button>
-    </div>
-  </div>
-</div>
 
-<!-- Payment Modal -->
-<div class="modal-overlay" id="paymentModal">
+    <!-- Attendance & OT Tabs -->
+    <div class="panel content-full animate-3" style="animation-delay:0.35s">
+      <div class="panel-head">
+        <div class="panel-title">
+          <div class="panel-title-icon blue">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+          </div>
+          Attendance & Overtime
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('att')">📋 Attendance</button>
+          <button class="tab-btn" onclick="switchTab('ot')">⏱ Overtime</button>
+        </div>
+        <div class="tab-content active" id="tab-att">
+          <div class="panel-body-scroll" style="max-height:280px">
+            <table class="data-table" id="attendanceTable">
+              <thead><tr><th>Date</th><th>Day</th><th>Status</th><th>Hours</th></tr></thead>
+              <tbody id="attendanceTbody">
+                <tr><td colspan="4"><div class="empty-state"><p>No attendance records</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-ot">
+          <div id="otList" class="panel-body-scroll" style="max-height:280px">
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <p>No overtime records found</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /main -->
+</div><!-- /dashboard -->
+
+<!-- Edit Profile Modal -->
+<div class="modal-backdrop hidden" id="editProfileModal">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Record Payment</div>
-      <button class="modal-close" onclick="closeModal('paymentModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-title">
+      Edit Profile
+      <button class="modal-close" onclick="closeModal('editProfileModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Worker</label>
-          <select class="form-input" id="payWorker"><option value="">Select worker</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Payment Date</label>
-          <input type="date" class="form-input" id="payDate">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Amount (₹)</label>
-          <input type="number" class="form-input" id="payAmount" placeholder="e.g. 5000">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Method</label>
-          <select class="form-input" id="payMethod">
-            <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option>
-          </select>
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Note</label>
-          <input type="text" class="form-input" id="payNote" placeholder="Optional note…">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="savePayment()"><i class="fas fa-save"></i> Save</button>
+    <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="editName" placeholder="Full Name"/></div>
+    <div class="form-group"><label class="form-label">Phone Number</label><input class="form-input" id="editPhone" placeholder="+91 XXXXX XXXXX"/></div>
+    <div class="form-group"><label class="form-label">Assigned Site</label><input class="form-input" id="editSite" placeholder="Site Name"/></div>
+    <div class="form-group"><label class="form-label">Role / Designation</label><input class="form-input" id="editRole" placeholder="e.g. Mason, Helper"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('editProfileModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
     </div>
   </div>
 </div>
 
-<!-- Confirm Delete Modal -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal confirm-modal">
-    <div class="modal-body" style="text-align:center;padding:32px 24px;">
-      <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
-      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">Confirm Delete</div>
-      <div id="confirmMsg" style="color:var(--text2);font-size:14px;margin-bottom:24px;">Are you sure you want to delete this record?</div>
-      <div style="display:flex;gap:10px;justify-content:center;">
-        <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
-        <button class="btn btn-danger" onclick="executeDelete()"><i class="fas fa-trash-alt"></i> Delete</button>
-      </div>
+<!-- Change Password Modal -->
+<div class="modal-backdrop hidden" id="changePassModal">
+  <div class="modal">
+    <div class="modal-title">
+      Change Password
+      <button class="modal-close" onclick="closeModal('changePassModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="form-group"><label class="form-label">Current Password</label><input class="form-input" id="currPass" type="password" placeholder="Current password"/></div>
+    <div class="form-group"><label class="form-label">New Password</label><input class="form-input" id="newPass" type="password" placeholder="New password (min 6 chars)"/></div>
+    <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" id="confirmPass" type="password" placeholder="Confirm new password"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('changePassModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
     </div>
   </div>
 </div>
 
-<!-- Salary Slip Print Area -->
-<div id="slip-print"></div>
+<!-- Contact Admin Modal -->
+<div class="modal-backdrop hidden" id="contactAdminModal">
+  <div class="modal">
+    <div class="modal-title">
+      Contact Admin
+      <button class="modal-close" onclick="closeModal('contactAdminModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="form-group"><label class="form-label">Subject</label><input class="form-input" id="contactSubject" placeholder="e.g. Salary discrepancy, Leave request"/></div>
+    <div class="form-group"><label class="form-label">Message</label><textarea class="form-input" id="contactMessage" rows="4" placeholder="Describe your issue or query..." style="resize:vertical"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('contactAdminModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendToAdmin()">Send Message</button>
+    </div>
+  </div>
+</div>
 
-</div><!-- end adminApp -->
-
-<!-- Toast Container -->
-<div class="toast-wrap" id="toastWrap"></div>
+<!-- Hidden Salary Slip for Print -->
+<div id="salary-slip" style="display:none"></div>
 
 <script>
-// ─── FIREBASE CONFIG ───
+// ============================
+// FIREBASE CONFIG
+// ============================
 const firebaseConfig = {
   apiKey: "AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
   authDomain: "ps-construction-tech.firebaseapp.com",
@@ -1497,866 +1231,722 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
+// ============================
+// STATE
+// ============================
+let currentWorker = null;
+let workerAttendance = [];
+let workerOvertime = [];
+let workerPayments = [];
 let db = null;
-let useLocalStorage = false;
 
-// Try Firebase init
 try {
-  firebase.initializeApp(firebaseConfig);
+  // Check if firebase already initialized (avoid duplicate init)
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
 } catch(e) {
-  useLocalStorage = true;
-  console.warn('Firebase not configured — using localStorage fallback.');
+  console.warn('Firebase not available:', e);
 }
 
-// ─── LOCAL STORAGE FALLBACK ───
-const LS = {
-  get: (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; }},
-  set: (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}},
-};
-
-// ─── DATA STATE ───
-let labours = [], attendance = [], overtime = [], payments = [];
-let editingId = null, deleteCallback = null, currentDetailLabour = null;
-let sortKey = 'name', sortAsc = true;
-
-// ─── INIT ───
-document.addEventListener('DOMContentLoaded', async () => {
-  // Always require fresh login on page load
-  sessionStorage.removeItem('admin_logged_in');
-
-  // Set theme
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  updateThemeIcon(savedTheme);
-
-  // Hide loading, show login
-  document.getElementById('loadingScreen').classList.add('hidden');
-  document.getElementById('adminLoginPage').style.display = 'flex';
-  document.getElementById('adminApp').style.display = 'none';
-});
-
-// Called after successful login to initialize the app
-async function initAdminApp() {
-  // Set today's date defaults
-  const today = new Date().toISOString().split('T')[0];
-  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
-  setVal('attDate', today);
-  setVal('attModalDate', today);
-  setVal('otDate', today);
-  setVal('payDate', today);
-  setVal('labourDate', today);
-
-  await loadAllData();
-  renderAll();
+// ============================
+// FIREBASE HELPERS
+// ============================
+async function loadWorkerData(labourId) {
+  if (!db) return null;
+  try {
+    const [attSnap, otSnap, paySnap] = await Promise.all([
+      db.collection('attendance').where('labourId','==',labourId).get(),
+      db.collection('overtime').where('labourId','==',labourId).get(),
+      db.collection('payments').where('labourId','==',labourId).get()
+    ]);
+    workerAttendance = attSnap.docs.map(d => ({id:d.id,...d.data()}));
+    workerOvertime   = otSnap.docs.map(d => ({id:d.id,...d.data()}));
+    workerPayments   = paySnap.docs.map(d => ({id:d.id,...d.data()}));
+    return true;
+  } catch(e) {
+    console.error('Firestore load error:', e);
+    return false;
+  }
 }
 
-// ─── DATA LOADING ───
-async function loadAllData() {
-  if (useLocalStorage) {
-    labours    = LS.get('labours');
-    attendance = LS.get('attendance');
-    overtime   = LS.get('overtime');
-    payments   = LS.get('payments');
+async function findWorkerByPscId(pscId) {
+  if (!db) return null;
+  try {
+    const snap = await db.collection('labours').where('pscId','==',pscId).limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { id: doc.id, ...doc.data() };
+  } catch(e) {
+    console.error('Worker lookup error:', e);
+    return null;
+  }
+}
+
+async function saveWorkerPassword(labourId, password) {
+  if (!db) return;
+  try {
+    await db.collection('labours').doc(labourId).update({ workerPassword: password });
+  } catch(e) { console.error('Password save error:', e); }
+}
+
+// ============================
+// THEME MANAGEMENT
+// ============================
+function initTheme() {
+  const saved = localStorage.getItem('wp_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+function toggleTheme() {
+  const curr = document.documentElement.getAttribute('data-theme');
+  const next = curr === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('wp_theme', next);
+  updateThemeIcon(next);
+}
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (!icon) return;
+  if (theme === 'dark') {
+    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>';
+  } else {
+    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>';
+  }
+}
+
+// ============================
+// AUTH - STEP 1: Check Worker ID
+// ============================
+let pendingWorkerData = null; // worker found from Firestore
+
+async function checkWorkerId() {
+  const pscId = document.getElementById('loginWorkerId').value.trim().toUpperCase();
+  if (!pscId) { showToast('warn', 'ID Required', 'Please enter your Worker ID.'); return; }
+
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  
+  const worker = await findWorkerByPscId(pscId);
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  
+  if (!worker) {
+    showToast('error', 'ID Not Found', `"${pscId}" this ID is not in the system. Please confirm with admin.`);
     return;
   }
-  try {
-    const [lSnap, aSnap, oSnap, pSnap] = await Promise.all([
-      db.collection('labours').get(),
-      db.collection('attendance').get(),
-      db.collection('overtime').get(),
-      db.collection('payments').get()
-    ]);
-    labours    = lSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    attendance = aSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    overtime   = oSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    payments   = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(e) {
-    useLocalStorage = true;
-    showToast('Firebase unavailable — using local storage', 'warn');
-    labours = LS.get('labours'); attendance = LS.get('attendance');
-    overtime = LS.get('overtime'); payments = LS.get('payments');
+  
+  pendingWorkerData = worker;
+  document.getElementById('loginWorkerIdDisplay').textContent = pscId;
+  
+  // Check if worker has a password set
+  if (worker.workerPassword) {
+    // Existing user - ask for password
+    document.getElementById('passwordLabel').textContent = 'Password';
+    document.getElementById('passwordFieldWrap').style.display = 'block';
+    document.getElementById('newPassWrap').style.display = 'none';
+    document.getElementById('loginBtn').textContent = 'Login';
+  } else {
+    // First time - let them in directly, then set password
+    document.getElementById('passwordFieldWrap').style.display = 'none';
+    document.getElementById('newPassWrap').style.display = 'block';
+    document.getElementById('loginBtn').textContent = 'Set Password & Login';
+    showToast('info', 'First Time Login', 'Please set a new password to continue.');
   }
+  
+  document.getElementById('loginStep1').style.display = 'none';
+  document.getElementById('loginStep2').style.display = 'block';
 }
 
-function saveAll() {
-  if (useLocalStorage) {
-    LS.set('labours', labours); LS.set('attendance', attendance);
-    LS.set('overtime', overtime); LS.set('payments', payments);
+function backToStep1() {
+  pendingWorkerData = null;
+  document.getElementById('loginStep1').style.display = 'block';
+  document.getElementById('loginStep2').style.display = 'none';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('setNewPass').value = '';
+  document.getElementById('setConfirmPass').value = '';
+}
+
+async function doLogin() {
+  if (!pendingWorkerData) { showToast('error', 'Error', 'Please enter your Worker ID first.'); return; }
+  const worker = pendingWorkerData;
+
+  if (worker.workerPassword) {
+    // Existing user - verify password
+    const entered = document.getElementById('loginPassword').value;
+    if (!entered) { showToast('warn', 'Password Required', 'Please enter your password.'); return; }
+    if (entered !== worker.workerPassword) {
+      showToast('error', 'Incorrect Password', 'The password is incorrect. Please try again.');
+      return;
+    }
+  } else {
+    // First time - set password
+    const np = document.getElementById('setNewPass').value;
+    const cp = document.getElementById('setConfirmPass').value;
+    if (!np || np.length < 4) { showToast('warn', 'Password Too Short', 'Password must be at least 4 characters long.'); return; }
+    if (np !== cp) { showToast('warn', 'Passwords Do Not Match', 'Both passwords must be the same.'); return; }
+    // Save password to Firebase
+    await saveWorkerPassword(worker.id, np);
+    worker.workerPassword = np;
+    showToast('success', 'Password Set', 'Your password has been saved. Use it for future logins.');
   }
+  
+  // Login successful - use session only (no localStorage)
+  currentWorker = { ...worker };
+  sessionStorage.setItem('wp_session', 'active');
+  sessionStorage.setItem('wp_workerId', worker.id);
+  showDashboard();
 }
 
-// ─── RENDER ALL ───
-function renderAll() {
-  autoFillAbsent();
-  renderStats();
-  renderDashboardTable();
-  renderLabourTable();
-  renderAttendanceTable();
-  renderOvertimeTable();
-  renderPaymentTable();
-  renderSalaryTable();
-  populateWorkerSelects();
-  populateSiteFilter();
+function doLogout() {
+  currentWorker = null;
+  workerAttendance = []; workerOvertime = []; workerPayments = [];
+  sessionStorage.removeItem('wp_session');
+  sessionStorage.removeItem('wp_workerId');
+  stopInactivityTimer();
+  document.getElementById('dashboardPage').style.display = 'none';
+  document.getElementById('fabGroup').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginStep1').style.display = 'block';
+  document.getElementById('loginStep2').style.display = 'none';
+  document.getElementById('loginWorkerId').value = '';
+  pendingWorkerData = null;
+  showToast('info', 'Logged Out', 'You have been logged out safely.');
 }
 
-// ─── AUTO FILL ABSENT ───
-// Agar kisi din attendance mark nahi hui toh wo Absent count hogi (display only, save nahi hogi)
-// Actual rendering me days count karte waqt sirf marked records use hote hain
-// Yeh function kuch nahi karta - absent sirf display ke liye auto-counted hoti hai salary me already
-// NOTE: Hum sirf present/half-day days count karte hain, baki sab absent maane jaate hain
-function autoFillAbsent() {
-  // Future: could mark absent records automatically for past dates
-  // For now absence is implied (no record = absent)
+function checkAuth() {
+  // Never auto-login from storage - always require fresh login
+  sessionStorage.removeItem('wp_session');
+  document.getElementById('loadingOverlay').classList.add('hidden');
 }
 
-// ─── STATS ───
-function renderStats() {
-  const totalWorkers = labours.length;
-  let totalSalary = 0, totalPaid = 0;
-
-  labours.forEach(l => {
-    const days = attendance.filter(a => a.labourId === l.id && a.status === 'Present').length
-               + attendance.filter(a => a.labourId === l.id && a.status === 'Half Day').length * 0.5;
-    const otAmt = overtime.filter(o => o.labourId === l.id).reduce((s, o) => s + (parseFloat(o.hours)||0) * (parseFloat(o.rate)||0), 0);
-    totalSalary += days * (parseFloat(l.rate)||0) + otAmt;
-    totalPaid   += payments.filter(p => p.labourId === l.id).reduce((s, p) => s + (parseFloat(p.amount)||0), 0);
-  });
-
-  animateCount('statWorkers', totalWorkers, '', 0);
-  animateCount('statSalary', totalSalary, '₹', 0);
-  animateCount('statPaid', totalPaid, '₹', 0);
-  animateCount('statPending', Math.max(0, totalSalary - totalPaid), '₹', 0);
+// ============================
+// DASHBOARD
+// ============================
+async function showDashboard() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('dashboardPage').style.display = 'block';
+  document.getElementById('fabGroup').style.display = 'flex';
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  await loadDashboard();
+  startInactivityTimer();
 }
 
-function animateCount(id, target, prefix, decimals) {
+async function loadDashboard() {
+  if (!currentWorker) return;
+
+  // Load data from Firebase
+  await loadWorkerData(currentWorker.id);
+
+  // Profile
+  const initials = (currentWorker.name||'W').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('topbarName').textContent = currentWorker.name || '—';
+  document.getElementById('topbarAvatar').textContent = initials;
+  document.getElementById('profileAvatarLarge').textContent = initials;
+  document.getElementById('profileName').textContent = currentWorker.name || '—';
+  document.getElementById('profileIdBadge').textContent = `ID: ${currentWorker.pscId || currentWorker.id}`;
+  document.getElementById('profilePhone').textContent = currentWorker.phone || '—';
+  document.getElementById('profileSite').textContent = currentWorker.site || '—';
+  document.getElementById('profileRole').textContent = currentWorker.type || '—';
+
+  // Compute stats from Firebase data
+  const att = workerAttendance;
+  const ot  = workerOvertime;
+  const pay = workerPayments;
+
+  const workingDays = att.filter(a => a.status === 'Present').length
+                    + att.filter(a => a.status === 'Half Day').length * 0.5;
+  const totalOTHours = ot.reduce((s,o) => s + (parseFloat(o.hours)||0), 0);
+  const dailyRate = parseFloat(currentWorker.rate||0);
+  const basic = workingDays * dailyRate;
+  const otRate = dailyRate > 0 ? Math.round(dailyRate / 8) : 0;
+  const otAmt = totalOTHours * otRate;
+  const totalSalary = basic + otAmt;
+  const totalPaid = pay.reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  const pending = Math.max(0, totalSalary - totalPaid);
+  const extraPaid = Math.max(0, totalPaid - totalSalary);
+
+  // Cards with animated counter
+  animateCounter('cardDays', 0, workingDays, '', 800);
+  animateCounter('cardTotal', 0, totalSalary, '₹', 1000);
+  animateCounter('cardPaid', 0, totalPaid, '₹', 1000);
+  animateCounter('cardPending', 0, pending, '₹', 1000);
+
+  // Salary breakdown
+  document.getElementById('slipBasic').textContent   = '₹' + basic.toLocaleString('en-IN');
+  document.getElementById('slipOT').textContent      = '₹' + otAmt.toLocaleString('en-IN');
+  document.getElementById('slipBonus').textContent   = extraPaid > 0 ? `+₹${extraPaid.toLocaleString('en-IN')} (Extra)` : '₹0';
+  document.getElementById('slipTotal').textContent   = '₹' + totalSalary.toLocaleString('en-IN');
+  document.getElementById('slipPaid').textContent    = '₹' + totalPaid.toLocaleString('en-IN');
+  document.getElementById('slipPending').textContent = '₹' + pending.toLocaleString('en-IN');
+  const pct = totalSalary > 0 ? Math.min(100, Math.round((totalPaid/totalSalary)*100)) : 0;
+  document.getElementById('progressPercent').textContent = pct + '%';
+  setTimeout(() => { document.getElementById('progressFill').style.width = pct + '%'; }, 300);
+
+  // Payment history
+  renderPayments(pay);
+  // Attendance
+  renderAttendance(att);
+  // Overtime
+  renderOT(ot);
+
+  // Hide loading
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  showToast('success', 'Welcome!', `Namaste, ${(currentWorker.name||'Worker').split(' ')[0]}! Aapka dashboard tayyar hai.`);
+}
+
+function animateCounter(id, from, to, prefix, duration) {
   const el = document.getElementById(id);
   if (!el) return;
-  const start = 0, duration = 800;
-  const startTime = performance.now();
+  const start = performance.now();
   function step(now) {
-    const progress = Math.min((now - startTime) / duration, 1);
-    const ease = 1 - Math.pow(1 - progress, 3);
-    const val = start + (target - start) * ease;
-    el.textContent = prefix + (decimals ? val.toFixed(decimals) : Math.round(val)).toLocaleString('en-IN');
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(from + (to - from) * eased);
+    el.textContent = prefix + current.toLocaleString();
     if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
 
-// ─── DASHBOARD TABLE ───
-function renderDashboardTable() {
-  const tbody = document.getElementById('dashboardTable');
-  if (!tbody) return;
-  if (!labours.length) { tbody.innerHTML = emptyRow(6, 'No workers added yet'); return; }
-  const recent = [...labours].sort((a,b) => new Date(b.date||0) - new Date(a.date||0)).slice(0, 8);
-  tbody.innerHTML = recent.map(l => {
-    const paid = payments.filter(p => p.labourId === l.id).reduce((s,p) => s + parseFloat(p.amount||0), 0);
-    const total = calcTotalSalary(l);
-    const pending = Math.max(0, total - paid);
-    return `<tr>
-      <td><strong style="font-weight:600">${esc(l.name)}</strong></td>
-      <td><span class="badge badge-blue">${esc(l.type||'—')}</span></td>
-      <td>${esc(l.site||'—')}</td>
-      <td>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</td>
-      <td><span class="badge ${pending > 0 ? 'badge-red' : 'badge-green'}">${pending > 0 ? 'Pending' : 'Paid'}</span></td>
-      <td>
-        <button class="btn btn-sm btn-secondary" onclick="openDetail('${l.id}')"><i class="fas fa-eye"></i></button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── LABOUR TABLE ───
-function renderLabourTable(filter = '') {
-  const tbody = document.getElementById('labourTable');
-  if (!tbody) return;
-  const search = (filter || document.getElementById('labourSearch')?.value || '').toLowerCase();
-  const site = document.getElementById('siteFilter')?.value || '';
-  const type = document.getElementById('typeFilter')?.value || '';
-  const sort = document.getElementById('sortBy')?.value || 'name';
-
-  let list = labours.filter(l => {
-    const match = !search || l.name?.toLowerCase().includes(search) || l.site?.toLowerCase().includes(search);
-    const siteMatch = !site || l.site === site;
-    const typeMatch = !type || l.type === type;
-    return match && siteMatch && typeMatch;
-  });
-
-  list.sort((a, b) => {
-    if (sort === 'name') return (a.name||'').localeCompare(b.name||'');
-    if (sort === 'rate') return parseFloat(a.rate||0) - parseFloat(b.rate||0);
-    if (sort === 'site') return (a.site||'').localeCompare(b.site||'');
-    return 0;
-  });
-  if (!sortAsc) list.reverse();
-
-  if (!list.length) { tbody.innerHTML = emptyRow(6, 'No workers found'); return; }
-
-  tbody.innerHTML = list.map(l => `<tr>
-    <td>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="background:var(--accent);color:white;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;white-space:nowrap">${esc(l.pscId||'—')}</span>
-      </div>
-    </td>
-    <td>
-      <strong style="font-weight:600;cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.name)}</strong>
-    </td>
-    <td style="color:var(--text2);font-size:13px;">${esc(l.phone||'—')}</td>
-    <td><span class="badge badge-orange">${esc(l.type||'—')}</span></td>
-    <td>${esc(l.site||'—')}</td>
-    <td><strong>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</strong>/day</td>
-    <td style="color:var(--text2);font-size:12px;">${formatDate(l.date)}</td>
-    <td>
-      <div style="display:flex;gap:6px;">
-        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openDetail('${l.id}')" title="View"><i class="fas fa-eye"></i></button>
-        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="editLabour('${l.id}')" title="Edit"><i class="fas fa-pen"></i></button>
-        <button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('labour','${l.id}')" title="Delete"><i class="fas fa-trash"></i></button>
-      </div>
-    </td>
-  </tr>`).join('');
-}
-
-function filterLabourTable(v) { renderLabourTable(v); }
-function setSortKey(k) { if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = true; } document.getElementById('sortBy').value = k; renderLabourTable(); }
-
-function populateSiteFilter() {
-  const sites = [...new Set(labours.map(l => l.site).filter(Boolean))];
-  const types = [...new Set(labours.map(l => l.type).filter(Boolean))];
-  const sf = document.getElementById('siteFilter');
-  const tf = document.getElementById('typeFilter');
-  if (sf) sf.innerHTML = '<option value="">All Sites</option>' + sites.map(s => `<option>${esc(s)}</option>`).join('');
-  if (tf) tf.innerHTML = '<option value="">All Types</option>' + types.map(t => `<option>${esc(t)}</option>`).join('');
-}
-
-// ─── ATTENDANCE TABLE ───
-function renderAttendanceTable() {
-  const tbody = document.getElementById('attendanceTable');
-  if (!tbody) return;
-  if (!attendance.length) { tbody.innerHTML = emptyRow(6, 'No attendance records'); return; }
-  const sorted = [...attendance].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  tbody.innerHTML = sorted.map(a => {
-    const l = labours.find(x => x.id === a.labourId);
-    return `<tr>
-      <td><span style="background:var(--accent);color:white;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">${esc(l?.pscId||'—')}</span></td>
-      <td><strong>${esc(l?.name || 'Unknown')}</strong></td>
-      <td>${esc(l?.site || '—')}</td>
-      <td style="color:var(--text2)">${formatDate(a.date)}</td>
-      <td><span class="badge ${a.status === 'Present' ? 'badge-green' : a.status === 'Half Day' ? 'badge-orange' : 'badge-red'}">${esc(a.status)}</span></td>
-      <td><button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('attendance','${a.id}')"><i class="fas fa-trash"></i></button></td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── OVERTIME TABLE ───
-function renderOvertimeTable() {
-  const tbody = document.getElementById('overtimeTable');
-  if (!tbody) return;
-  if (!overtime.length) { tbody.innerHTML = emptyRow(6, 'No overtime records'); return; }
-  const sorted = [...overtime].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  tbody.innerHTML = sorted.map(o => {
-    const l = labours.find(x => x.id === o.labourId);
-    const amt = (parseFloat(o.hours)||0) * (parseFloat(o.rate)||0);
-    return `<tr>
-      <td><strong>${esc(l?.name || 'Unknown')}</strong></td>
-      <td style="color:var(--text2)">${formatDate(o.date)}</td>
-      <td><strong>${o.hours} hrs</strong></td>
-      <td>₹${parseFloat(o.rate||0).toLocaleString('en-IN')}/hr</td>
-      <td><strong style="color:var(--accent3)">₹${amt.toLocaleString('en-IN')}</strong></td>
-      <td><button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('overtime','${o.id}')"><i class="fas fa-trash"></i></button></td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── PAYMENT TABLE ───
-function renderPaymentTable() {
-  const tbody = document.getElementById('paymentTable');
-  if (!tbody) return;
-  if (!payments.length) { tbody.innerHTML = emptyRow(6, 'No payments recorded'); return; }
-  const sorted = [...payments].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  tbody.innerHTML = sorted.map(p => {
-    const l = labours.find(x => x.id === p.labourId);
-    return `<tr>
-      <td><strong>${esc(l?.name || 'Unknown')}</strong></td>
-      <td style="color:var(--text2)">${formatDate(p.date)}</td>
-      <td><strong style="color:var(--accent3)">₹${parseFloat(p.amount||0).toLocaleString('en-IN')}</strong></td>
-      <td><span class="badge badge-blue">${esc(p.method||'Cash')}</span></td>
-      <td style="color:var(--text2);font-size:12px">${esc(p.note||'—')}</td>
-      <td><button class="btn btn-sm btn-danger btn-icon-only" onclick="confirmDelete('payment','${p.id}')"><i class="fas fa-trash"></i></button></td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── SALARY TABLE ───
-function renderSalaryTable() {
-  const tbody = document.getElementById('salaryTable');
-  if (!tbody) return;
-  if (!labours.length) { tbody.innerHTML = emptyRow(8, 'No workers added'); return; }
-  tbody.innerHTML = labours.map(l => {
-    const days = attendance.filter(a => a.labourId === l.id && a.status === 'Present').length
-               + attendance.filter(a => a.labourId === l.id && a.status === 'Half Day').length * 0.5;
-    const otAmt = overtime.filter(o => o.labourId === l.id).reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
-    const baseSalary = days * parseFloat(l.rate||0);
-    const totalSal = baseSalary + otAmt;
-    const paid = payments.filter(p => p.labourId === l.id).reduce((s,p) => s + parseFloat(p.amount||0), 0);
-    const pending = Math.max(0, totalSal - paid);
-    const extraPaid = Math.max(0, paid - totalSal);
-    return `<tr>
-      <td><strong style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.name)}</strong>
-          <div style="font-size:11px;color:var(--text3)">${esc(l.site||'')}</div></td>
-      <td>${days}</td>
-      <td>₹${baseSalary.toLocaleString('en-IN')}</td>
-      <td>₹${otAmt.toLocaleString('en-IN')}</td>
-      <td><strong>₹${totalSal.toLocaleString('en-IN')}</strong></td>
-      <td style="color:var(--accent3)"><strong>₹${paid.toLocaleString('en-IN')}</strong></td>
-      <td><span class="badge ${pending > 0 ? 'badge-red' : 'badge-green'}">₹${pending.toLocaleString('en-IN')}</span></td>
-      <td>${extraPaid > 0 ? `<span class="badge badge-purple" title="Extra payment (jyada de di)">+₹${extraPaid.toLocaleString('en-IN')}</span>` : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
-      <td>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-sm btn-secondary btn-icon-only" onclick="openDetail('${l.id}')" title="View"><i class="fas fa-eye"></i></button>
-          <button class="btn btn-sm btn-secondary btn-icon-only" onclick="printSlipFor('${l.id}')" title="Salary Slip"><i class="fas fa-print"></i></button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── CALC SALARY ───
-function calcTotalSalary(l) {
-  const days = attendance.filter(a => a.labourId === l.id && a.status === 'Present').length
-             + attendance.filter(a => a.labourId === l.id && a.status === 'Half Day').length * 0.5;
-  const otAmt = overtime.filter(o => o.labourId === l.id).reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
-  return days * parseFloat(l.rate||0) + otAmt;
-}
-
-// ─── POPULATE WORKER SELECTS ───
-function populateWorkerSelects() {
-  // attWorker shows ID first, then name
-  const attEl = document.getElementById('attWorker');
-  if (attEl) {
-    const cur = attEl.value;
-    attEl.innerHTML = '<option value="">-- ID se Worker Chunen --</option>' + 
-      labours.map(l => `<option value="${l.id}">[${esc(l.pscId||'?')}] ${esc(l.name)}</option>`).join('');
-    attEl.value = cur;
-  }
-  // otWorker and payWorker show name
-  ['otWorker', 'payWorker'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const cur = el.value;
-    el.innerHTML = '<option value="">Select worker</option>' + labours.map(l => `<option value="${l.id}">${esc(l.name)} [${esc(l.pscId||'?')}]</option>`).join('');
-    el.value = cur;
-  });
-}
-
-// ─── ADD/EDIT LABOUR ───
-function openAddModal() {
-  editingId = null;
-  document.getElementById('labourModalTitle').textContent = 'Add Labour';
-  ['labourName','labourType','labourRate','labourSite','labourPhone'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  document.getElementById('labourDate').value = new Date().toISOString().split('T')[0];
-  openModal('labourModal');
-}
-
-function editLabour(id) {
-  const l = labours.find(x => x.id === id);
-  if (!l) return;
-  editingId = id;
-  document.getElementById('labourModalTitle').textContent = 'Edit Labour';
-  document.getElementById('labourName').value = l.name || '';
-  document.getElementById('labourType').value = l.type || '';
-  document.getElementById('labourRate').value = l.rate || '';
-  document.getElementById('labourSite').value = l.site || '';
-  document.getElementById('labourDate').value = l.date || '';
-  document.getElementById('labourPhone').value = l.phone || '';
-  openModal('labourModal');
-}
-
-function generateLabourId() {
-  // Truly unique: check existing IDs, always increment from max
-  const usedNums = new Set(labours.map(l => {
-    if (l.pscId && l.pscId.startsWith('PSC')) {
-      const n = parseInt(l.pscId.replace('PSC',''), 10);
-      return isNaN(n) ? -1 : n;
-    }
-    return -1;
-  }));
-  let num = 1;
-  while (usedNums.has(num)) num++;
-  return 'PSC' + String(num).padStart(3, '0');
-}
-
-async function saveLabour() {
-  const name  = document.getElementById('labourName').value.trim();
-  const type  = document.getElementById('labourType').value;
-  const rate  = document.getElementById('labourRate').value;
-  const site  = document.getElementById('labourSite').value.trim();
-  const date  = document.getElementById('labourDate').value;
-  const phone = document.getElementById('labourPhone').value.trim();
-
-  if (!name || !type || !rate || !site) { showToast('Please fill all required fields', 'error'); return; }
-
-  const data = { name, type, rate: parseFloat(rate), site, date, phone };
-
-  if (editingId) {
-    const existing = labours.find(l => l.id === editingId);
-    if (existing && existing.pscId) data.pscId = existing.pscId;
-    if (!useLocalStorage) await db.collection('labours').doc(editingId).update(data);
-    const idx = labours.findIndex(l => l.id === editingId);
-    if (idx !== -1) labours[idx] = { id: editingId, ...data };
-    showToast('Worker updated successfully ✅', 'success');
-  } else {
-    const id = 'l_' + Date.now();
-    data.pscId = generateLabourId();
-    if (!useLocalStorage) await db.collection('labours').doc(id).set(data);
-    labours.push({ id, ...data });
-    showToast('Worker add ho gaya: ' + data.pscId, 'success');
-    setTimeout(() => {
-      showScreenPopup('✅ Labour Add Ho Gaya!', `<b>Naam:</b> ${name}<br><b>Unique ID:</b> ${data.pscId}<br><b>Site:</b> ${site}<br><b>Daily Rate:</b> ₹${parseFloat(rate).toLocaleString('en-IN')}<br><br><i style="color:var(--accent);font-weight:600">Worker apni login ke liye yeh ID use karein: ${data.pscId}</i>`, 'success');
-    }, 200);
-  }
-
-  saveAll();
-  closeModal('labourModal');
-  // Reset form fields
-  ['labourName','labourType','labourRate','labourSite','labourPhone'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.value = '';
-  });
-  document.getElementById('labourDate').value = new Date().toISOString().split('T')[0];
-  editingId = null;
-  renderAll();
-}
-
-// ─── ATTENDANCE ───
-function openBulkAttModal() { openModal('attendanceModal'); }
-
-async function saveAttendance() {
-  const labourId = document.getElementById('attWorker').value;
-  const date     = document.getElementById('attModalDate').value;
-  const status   = document.getElementById('attStatus').value;
-
-  if (!labourId || !date) { showToast('Please select worker and date', 'error'); return; }
-
-  const data = { labourId, date, status };
-  const id = 'a_' + Date.now();
-
-  // Ek din mein ek hi attendance allowed
-  const exists = attendance.find(a => a.labourId === labourId && a.date === date);
-  if (exists) {
-    showScreenPopup('⚠️ Already Marked', `Is worker ki is din (${formatDate(date)}) ki attendance pehle se mark ho chuki hai.\n\nStatus: ${exists.status}`, 'warn');
+// ============================
+// RENDER FUNCTIONS
+// ============================
+function renderPayments(payments) {
+  const container = document.getElementById('paymentHistoryList');
+  document.getElementById('paymentCountBadge').textContent = payments.length + ' records';
+  if (!payments.length) {
+    container.innerHTML = `<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5"/></svg><p>No payment records found</p></div>`;
     return;
   }
-  if (!useLocalStorage) await db.collection('attendance').doc(id).set(data);
-  attendance.push({ id, ...data });
-  showToast('Attendance mark ho gayi ✅', 'success');
-
-  saveAll(); closeModal('attendanceModal'); renderAll();
-}
-
-// ─── OVERTIME ───
-function openOTModal() {
-  document.getElementById('otPreview').style.display = 'none';
-  openModal('overtimeModal');
-}
-
-function updateOTRate() {
-  const labourId = document.getElementById('otWorker').value;
-  const l = labours.find(x => x.id === labourId);
-  if (l && l.rate) {
-    const otRate = Math.round(parseFloat(l.rate) / 8);
-    document.getElementById('otRate').value = otRate;
-    updateOTPreview();
-  } else {
-    document.getElementById('otRate').value = '';
-  }
-}
-
-function updateOTPreview() {
-  const hours = parseFloat(document.getElementById('otHours').value) || 0;
-  const rate  = parseFloat(document.getElementById('otRate').value) || 0;
-  const amt   = hours * rate;
-  if (hours > 0 && rate > 0) {
-    document.getElementById('otPreview').style.display = 'block';
-    document.getElementById('otAmtPreview').textContent = '₹' + amt.toLocaleString('en-IN');
-  }
-}
-
-async function saveOT() {
-  const labourId = document.getElementById('otWorker').value;
-  const date     = document.getElementById('otDate').value;
-  const hours    = document.getElementById('otHours').value;
-  const rate     = document.getElementById('otRate').value;
-
-  if (!labourId || !date || !hours) { showToast('Please fill all fields', 'error'); return; }
-
-  const l = labours.find(x => x.id === labourId);
-  const actualRate = rate || Math.round(parseFloat(l?.rate || 0) / 8);
-  const amt = parseFloat(hours) * parseFloat(actualRate);
-
-  const data = { labourId, date, hours: parseFloat(hours), rate: parseFloat(actualRate) };
-  const id = 'o_' + Date.now();
-
-  if (!useLocalStorage) await db.collection('overtime').doc(id).set(data);
-  overtime.push({ id, ...data });
-  saveAll(); closeModal('overtimeModal'); renderAll();
-  showToast('Overtime recorded ✅ ₹' + amt.toLocaleString('en-IN'), 'success');
-}
-
-// ─── PAYMENTS ───
-function openPaymentModal() { openModal('paymentModal'); }
-
-async function savePayment() {
-  const labourId = document.getElementById('payWorker').value;
-  const date     = document.getElementById('payDate').value;
-  const amount   = document.getElementById('payAmount').value;
-  const method   = document.getElementById('payMethod').value;
-  const noteRaw  = document.getElementById('payNote').value.trim();
-
-  if (!labourId || !date || !amount) { showToast('Please fill required fields', 'error'); return; }
-
-  // Calculate if this is extra payment
-  const l = labours.find(x => x.id === labourId);
-  const totalSal = l ? calcTotalSalary(l) : 0;
-  const alreadyPaid = payments.filter(p => p.labourId === labourId).reduce((s,p) => s + parseFloat(p.amount||0), 0);
-  const newTotal = alreadyPaid + parseFloat(amount);
-  const isExtra = newTotal > totalSal && totalSal > 0;
-  const note = isExtra ? (noteRaw ? noteRaw + ' [EXTRA]' : 'EXTRA PAYMENT') : noteRaw;
-
-  const data = { labourId, date, amount: parseFloat(amount), method, note };
-  const id = 'p_' + Date.now();
-
-  if (!useLocalStorage) await db.collection('payments').doc(id).set(data);
-  payments.push({ id, ...data });
-  saveAll();
-  closeModal('paymentModal');
-
-  // Reset form
-  document.getElementById('payAmount').value = '';
-  document.getElementById('payNote').value = '';
-
-  renderAll();
-
-  const workerName = l ? l.name : 'Worker';
-  const extraMsg = isExtra ? '<br><span style="color:#ef4444;font-weight:600">⚠️ EXTRA PAYMENT: Yeh payment total salary se zyada hai!</span>' : '';
-  showToast('Payment record ho gayi ✅' + (isExtra ? ' (EXTRA)' : ''), 'success');
-  setTimeout(() => {
-    showScreenPopup('✅ Payment Record Ho Gayi', `<b>Worker:</b> ${workerName}<br><b>Amount:</b> ₹${parseFloat(amount).toLocaleString('en-IN')}<br><b>Method:</b> ${method}${extraMsg}`, isExtra ? 'warn' : 'success');
-  }, 100);
-}
-
-// ─── DELETE ───
-function confirmDelete(type, id) {
-  const l = labours.find(x => x.id === id);
-  if (type === 'labour') {
-    showPinPopup(
-      '🔐 Worker Delete — PIN Darj Karen',
-      `"${l?.name || 'Worker'}" ko delete karne ke liye admin PIN daalen. Yeh amal wapas nahi ho sakta.`,
-      () => doDelete('labour', id)
-    );
-  } else {
-    let msg = 'Kya aap yeh record delete karna chahte hain? Yeh wapas nahi hoga.';
-    deleteCallback = () => doDelete(type, id);
-    openModal('confirmModal');
-  }
-}
-
-async function executeDelete() {
-  if (deleteCallback) await deleteCallback();
-  deleteCallback = null;
-  closeModal('confirmModal');
-}
-
-async function doDelete(type, id) {
-  if (type === 'labour') {
-    if (!useLocalStorage) {
-      await db.collection('labours').doc(id).delete();
-      // Also delete related records
-      const attIds = attendance.filter(a => a.labourId === id).map(a => a.id);
-      const otIds  = overtime.filter(o => o.labourId === id).map(o => o.id);
-      const pIds   = payments.filter(p => p.labourId === id).map(p => p.id);
-      await Promise.all([...attIds.map(i => db.collection('attendance').doc(i).delete()),
-                         ...otIds.map(i => db.collection('overtime').doc(i).delete()),
-                         ...pIds.map(i => db.collection('payments').doc(i).delete())]);
-    }
-    labours    = labours.filter(l => l.id !== id);
-    attendance = attendance.filter(a => a.labourId !== id);
-    overtime   = overtime.filter(o => o.labourId !== id);
-    payments   = payments.filter(p => p.labourId !== id);
-    showToast('Worker deleted', 'success');
-  } else if (type === 'attendance') {
-    if (!useLocalStorage) await db.collection('attendance').doc(id).delete();
-    attendance = attendance.filter(a => a.id !== id);
-    showToast('Attendance record deleted', 'success');
-  } else if (type === 'overtime') {
-    if (!useLocalStorage) await db.collection('overtime').doc(id).delete();
-    overtime = overtime.filter(o => o.id !== id);
-    showToast('Overtime record deleted', 'success');
-  } else if (type === 'payment') {
-    if (!useLocalStorage) await db.collection('payments').doc(id).delete();
-    payments = payments.filter(p => p.id !== id);
-    showToast('Payment deleted', 'success');
-  }
-  saveAll(); renderAll();
-}
-
-// ─── DETAIL MODAL ───
-function openDetail(id) {
-  const l = labours.find(x => x.id === id);
-  if (!l) return;
-  currentDetailLabour = l;
-
-  const lAtt  = attendance.filter(a => a.labourId === id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  const lOT   = overtime.filter(o => o.labourId === id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  const lPay  = payments.filter(p => p.labourId === id).sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-
-  const days  = lAtt.filter(a => a.status === 'Present').length + lAtt.filter(a => a.status === 'Half Day').length * 0.5;
-  const otAmt = lOT.reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
-  const totalSal = days * parseFloat(l.rate||0) + otAmt;
-  const paid  = lPay.reduce((s,p) => s + parseFloat(p.amount||0), 0);
-  const pending = Math.max(0, totalSal - paid);
-
-  document.getElementById('detailModalBody').innerHTML = `
-    <div class="detail-hero">
-      <div class="detail-avatar">${l.name?.charAt(0)?.toUpperCase() || 'W'}</div>
-      <div class="detail-info">
-        <div class="name">${esc(l.name)}</div>
-        <div class="meta"><span class="badge badge-orange">${esc(l.type||'—')}</span>
-          &nbsp;📍 ${esc(l.site||'—')} &nbsp; 📅 ${formatDate(l.date)}
-          ${l.phone ? `&nbsp; 📞 ${esc(l.phone)}` : ''}
+  const sorted = [...payments].sort((a,b) => new Date(b.date) - new Date(a.date));
+  container.innerHTML = sorted.map((p,i) => {
+    const d = new Date(p.date);
+    const dStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+    return `<div class="payment-item ${i===0?'recent':''}">
+      <div class="payment-left">
+        <div class="payment-icon-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33"/></svg>
+        </div>
+        <div>
+          <div class="payment-label">${p.note}</div>
+          <div class="payment-date">${dStr}</div>
         </div>
       </div>
-    </div>
-    <div class="detail-stats" style="grid-template-columns:repeat(4,1fr)">
-      <div class="detail-stat">
-        <div class="detail-stat-val">${days}</div>
-        <div class="detail-stat-lbl">Days Present</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-val" style="color:var(--accent3)">₹${totalSal.toLocaleString('en-IN')}</div>
-        <div class="detail-stat-lbl">Total Salary</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-val" style="color:${pending > 0 ? '#ef4444' : '#10b981'}">₹${pending.toLocaleString('en-IN')}</div>
-        <div class="detail-stat-lbl">Pending</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-val" style="color:${paid > totalSal && totalSal > 0 ? '#8b5cf6' : 'var(--text3)'}">₹${Math.max(0,paid-totalSal).toLocaleString('en-IN')}</div>
-        <div class="detail-stat-lbl">Extra Paid</div>
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title"><i class="fas fa-calendar-check"></i> Attendance History</div>
-      <div class="detail-list">
-        ${lAtt.length ? lAtt.slice(0,10).map(a => `
-          <div class="detail-row">
-            <span class="dr-date">${formatDate(a.date)}</span>
-            <span class="badge ${a.status === 'Present' ? 'badge-green' : a.status === 'Half Day' ? 'badge-orange' : 'badge-red'}">${a.status}</span>
-            ${a.otHours ? `<span style="font-size:12px;color:var(--text2)">${a.otHours}hr OT</span>` : ''}
-          </div>`).join('') :
-          '<div style="color:var(--text3);font-size:13px;padding:10px">No attendance records</div>'
-        }
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title"><i class="fas fa-clock"></i> Overtime History</div>
-      <div class="detail-list">
-        ${lOT.length ? lOT.map(o => {
-          const amt = (parseFloat(o.hours)||0) * (parseFloat(o.rate)||0);
-          return `<div class="detail-row">
-            <span class="dr-date">${formatDate(o.date)}</span>
-            <span>${o.hours} hrs @ ₹${o.rate}/hr</span>
-            <span class="dr-val green">₹${amt.toLocaleString('en-IN')}</span>
-          </div>`;
-        }).join('') :
-          '<div style="color:var(--text3);font-size:13px;padding:10px">No overtime records</div>'
-        }
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title"><i class="fas fa-wallet"></i> Payment History</div>
-      <div class="detail-list">
-        ${lPay.length ? lPay.map((p, i) => `
-          <div class="detail-row" style="${i===0 ? 'border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)' : ''}">
-            <span class="dr-date">${formatDate(p.date)}</span>
-            <span class="badge badge-blue">${esc(p.method||'Cash')}</span>
-            ${p.note ? `<span style="font-size:12px;color:var(--text2)">${esc(p.note)}</span>` : ''}
-            <span class="dr-val green">₹${parseFloat(p.amount||0).toLocaleString('en-IN')}</span>
-          </div>`).join('') :
-          '<div style="color:var(--text3);font-size:13px;padding:10px">No payments recorded</div>'
-        }
-        ${lPay.length ? `<div class="detail-row" style="background:var(--bg2);font-weight:700;">
-          <span>Total Paid</span>
-          <span class="dr-val green">₹${paid.toLocaleString('en-IN')}</span>
-        </div>` : ''}
-      </div>
-    </div>
-  `;
-
-  openModal('detailModal');
-}
-
-// ─── SALARY SLIP PRINT ───
-function printSlip() {
-  if (currentDetailLabour) printSlipFor(currentDetailLabour.id);
-}
-
-function printSlipFor(id) {
-  const l = labours.find(x => x.id === id);
-  if (!l) return;
-
-  const lAtt = attendance.filter(a => a.labourId === id);
-  const lOT  = overtime.filter(o => o.labourId === id);
-  const lPay = payments.filter(p => p.labourId === id);
-
-  const days = lAtt.filter(a => a.status === 'Present').length + lAtt.filter(a => a.status === 'Half Day').length * 0.5;
-  const otAmt = lOT.reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
-  const baseSal = days * parseFloat(l.rate||0);
-  const totalSal = baseSal + otAmt;
-  const paid = lPay.reduce((s,p) => s + parseFloat(p.amount||0), 0);
-  const pending = Math.max(0, totalSal - paid);
-
-  const slipHTML = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:2px solid #333;padding:30px;">
-      <div style="text-align:center;border-bottom:2px solid #f97316;padding-bottom:16px;margin-bottom:20px;">
-        <h1 style="color:#f97316;margin:0;font-size:24px;">PS Construction</h1>
-        <p style="margin:4px 0;color:#666;font-size:13px;">Labour Salary Slip</p>
-        <p style="margin:0;font-size:12px;color:#999;">Generated: ${new Date().toLocaleDateString('en-IN')}</p>
-      </div>
-      <table style="width:100%;margin-bottom:20px;">
-        <tr><td style="padding:4px 0;color:#666;font-size:13px;width:40%">Worker Name</td><td style="font-weight:bold">${esc(l.name)}</td></tr>
-        <tr><td style="padding:4px 0;color:#666;font-size:13px">Labour Type</td><td>${esc(l.type||'—')}</td></tr>
-        <tr><td style="padding:4px 0;color:#666;font-size:13px">Site / Project</td><td>${esc(l.site||'—')}</td></tr>
-        <tr><td style="padding:4px 0;color:#666;font-size:13px">Daily Rate</td><td>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</td></tr>
-        ${l.phone ? `<tr><td style="padding:4px 0;color:#666;font-size:13px">Phone</td><td>${esc(l.phone)}</td></tr>` : ''}
-      </table>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr style="background:#f5f5f5;"><th style="padding:8px;text-align:left;border:1px solid #ddd">Description</th><th style="padding:8px;text-align:right;border:1px solid #ddd">Amount</th></tr>
-        <tr><td style="padding:8px;border:1px solid #ddd">Basic Salary (${days} days × ₹${parseFloat(l.rate||0).toLocaleString('en-IN')})</td><td style="padding:8px;text-align:right;border:1px solid #ddd">₹${baseSal.toLocaleString('en-IN')}</td></tr>
-        <tr><td style="padding:8px;border:1px solid #ddd">Overtime Allowance</td><td style="padding:8px;text-align:right;border:1px solid #ddd">₹${otAmt.toLocaleString('en-IN')}</td></tr>
-        <tr style="background:#fff3e0;font-weight:bold;"><td style="padding:10px;border:1px solid #ddd">TOTAL SALARY</td><td style="padding:10px;text-align:right;border:1px solid #ddd;color:#f97316">₹${totalSal.toLocaleString('en-IN')}</td></tr>
-        <tr><td style="padding:8px;border:1px solid #ddd">Total Paid</td><td style="padding:8px;text-align:right;border:1px solid #ddd;color:green">₹${paid.toLocaleString('en-IN')}</td></tr>
-        <tr style="font-weight:bold;background:${pending > 0 ? '#fee2e2' : '#dcfce7'};"><td style="padding:10px;border:1px solid #ddd">BALANCE PENDING</td><td style="padding:10px;text-align:right;border:1px solid #ddd;color:${pending > 0 ? 'red' : 'green'}">₹${pending.toLocaleString('en-IN')}</td></tr>
-      </table>
-      <div style="margin-top:40px;display:flex;justify-content:space-between;">
-        <div><div style="border-top:1px solid #333;width:160px;padding-top:6px;font-size:12px;text-align:center">Worker Signature</div></div>
-        <div><div style="border-top:1px solid #333;width:160px;padding-top:6px;font-size:12px;text-align:center">Authorized Signature</div></div>
-      </div>
+      <div class="payment-amount">+₹${p.amount.toLocaleString()}</div>
     </div>`;
-
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>Salary Slip — ${esc(l.name)}</title></head><body>${slipHTML}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
-  win.document.close();
+  }).join('');
 }
 
-function printAllSlips() {
-  if (!labours.length) { showToast('No workers to print', 'warn'); return; }
-  showToast('Opening salary report…', 'info');
-  setTimeout(() => {
-    labours.forEach(l => printSlipFor(l.id));
-  }, 300);
+function renderAttendance(att) {
+  const tbody = document.getElementById('attendanceTbody');
+  if (!att.length) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><p>No attendance records found</p></div></td></tr>';
+    return;
+  }
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const sorted = [...att].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  tbody.innerHTML = sorted.map(a => {
+    const d = new Date(a.date + 'T12:00:00');
+    const dStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+    const dayName = days[d.getDay()];
+    const st = a.status || 'Absent';
+    const badge = st === 'Present'
+      ? '<span class="status-badge present">Present</span>'
+      : st === 'Half Day'
+      ? '<span class="status-badge" style="background:rgba(249,115,22,0.12);color:#f97316">Half Day</span>'
+      : '<span class="status-badge absent">Absent</span>';
+    return `<tr>
+      <td>${dStr} <span style="color:var(--text-muted);font-size:11px">${dayName}</span></td>
+      <td>${badge}</td>
+      <td>—</td>
+    </tr>`;
+  }).join('');
 }
 
-// ─── NAVIGATION ───
-function showPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById(`page-${page}`)?.classList.add('active');
-  const titles = { dashboard:'Dashboard', labours:'Labour Registry', attendance:'Attendance', overtime:'Overtime', payments:'Payments', salary:'Salary Report' };
-  document.getElementById('pageTitle').textContent = titles[page] || '';
-  document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick')?.includes(page)) n.classList.add('active');
+function renderOT(ot) {
+  const container = document.getElementById('otList');
+  if (!ot.length) {
+    container.innerHTML = `<div class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p>No overtime records found</p>
+    </div>`;
+    return;
+  }
+  const total = ot.reduce((s,o) => s + (parseFloat(o.hours)||0), 0);
+  const dailyRate = parseFloat(currentWorker?.rate||0);
+  const otRate = dailyRate > 0 ? Math.round(dailyRate / 8) : 0;
+  const totalOtAmt = ot.reduce((s,o) => s + (parseFloat(o.hours)||0) * (parseFloat(o.rate)||otRate), 0);
+  container.innerHTML = `
+    <div style="padding:12px 22px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span style="font-size:0.78rem;color:var(--text-muted)">Total OT Hours: <strong style="color:var(--accent)">${total} hrs</strong></span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">OT Rate: <strong style="color:var(--accent)">₹${otRate}/hr</strong> (salary÷8)</span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">Total OT Amount: <strong style="color:var(--green)">₹${totalOtAmt.toLocaleString()}</strong></span>
+    </div>
+    ${[...ot].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).map(o => {
+      const d = new Date((o.date||'') + 'T12:00:00');
+      const dStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+      const hrs = parseFloat(o.hours)||0;
+      const rateUsed = parseFloat(o.rate)||otRate;
+      const amt = hrs * rateUsed;
+      return `<div class="ot-item">
+        <span class="ot-date">${dStr}</span>
+        <span class="ot-hours">+${hrs} hrs OT</span>
+        <span style="font-size:0.8rem;color:var(--green);font-weight:600;">₹${amt.toLocaleString('en-IN')}</span>
+      </div>`;
+    }).join('')}`;
+}
+
+// ============================
+// TABS
+// ============================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['att','ot'][i] === tab);
   });
-  closeSidebar();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
 }
 
-// ─── SIDEBAR ───
-function toggleSidebar() {
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sidebarOverlay');
-  sb.classList.toggle('open');
-  if (ov) ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+// ============================
+// MODALS
+// ============================
+function showEditProfile() {
+  showToast('Profile editing disabled by admin', 'warn');
+  return;
 }
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  const ov = document.getElementById('sidebarOverlay');
-  if (ov) ov.style.display = 'none';
+function showChangePassword() {
+  document.getElementById('changePassModal').classList.remove('hidden');
 }
-
-// ─── THEME ───
-function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme');
-  const next = cur === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-  updateThemeIcon(next);
-}
-function updateThemeIcon(theme) {
-  const icon = document.getElementById('themeIcon');
-  if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-}
-
-// ─── GLOBAL SEARCH ───
-function handleGlobalSearch(v) {
-  showPage('labours');
-  document.getElementById('labourSearch').value = v;
-  filterLabourTable(v);
-}
-
-// ─── REFRESH ───
-async function refreshData() {
-  showToast('Refreshing data…', 'info');
-  await loadAllData();
-  renderAll();
-  showToast('Data refreshed', 'success');
-}
-
-function logout() {
-  showScreenPopup('Logout Confirm', 'Kya aap logout karna chahte hain?', 'warn', doActualLogout);
-}
-
-// ─── MODAL HELPERS ───
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) { el.classList.add('open'); el.style.display = 'flex'; }
+function showContactAdmin() {
+  document.getElementById('contactAdminModal').classList.remove('hidden');
 }
 function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) { el.classList.remove('open'); el.style.display = ''; }
+  document.getElementById(id).classList.add('hidden');
 }
-// Close on backdrop click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); });
+async function saveProfile() {
+  const newName  = document.getElementById('editName').value.trim();
+  const newPhone = document.getElementById('editPhone').value.trim();
+  if (newName)  currentWorker.name  = newName;
+  if (newPhone) currentWorker.phone = newPhone;
+  // Save to Firebase
+  if (db && currentWorker.id) {
+    try {
+      const update = {};
+      if (newName) update.name = newName;
+      if (newPhone) update.phone = newPhone;
+      await db.collection('labours').doc(currentWorker.id).update(update);
+    } catch(e) { console.error('Profile update error:', e); }
+  }
+  closeModal('editProfileModal');
+  loadDashboard();
+  showToast('success', 'Profile Updated', 'Your profile has been saved.');
+}
+async function changePassword() {
+  const curr = document.getElementById('currPass').value;
+  const np   = document.getElementById('newPass').value;
+  const cp   = document.getElementById('confirmPass').value;
+  if (curr !== currentWorker?.workerPassword) { showToast('error', 'Incorrect Password', 'Current password is not correct.'); return; }
+  if (np.length < 4) { showToast('warn', 'Password Too Short', 'Password must be at least 4 characters long.'); return; }
+  if (np !== cp) { showToast('warn', 'Passwords Do Not Match', 'New passwords must be the same.'); return; }
+  await saveWorkerPassword(currentWorker.id, np);
+  currentWorker.workerPassword = np;
+  closeModal('changePassModal');
+  document.getElementById('currPass').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('confirmPass').value = '';
+  showToast('success', 'Password Changed', 'Your new password has been saved.');
+}
+function sendToAdmin() {
+  const subj = document.getElementById('contactSubject').value.trim();
+  const msg  = document.getElementById('contactMessage').value.trim();
+  if (!subj || !msg) { showToast('warn', 'Incomplete', 'Please fill both subject and message.'); return; }
+  closeModal('contactAdminModal');
+  showToast('success', 'Message Sent', 'Your message has been sent to the admin.');
+  // Firebase: save to Firestore messages collection
+}
+
+// ============================
+// TOAST
+// ============================
+function showToast(type, title, message) {
+  const icons = {
+    success: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    info:    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>`,
+    warn:    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"/></svg>`,
+    error:   `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>`,
+  };
+  const iconClass = type === 'error' ? 'warn' : type;
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<div class="toast-icon ${iconClass}">${icons[type]||icons.info}</div>
+    <div class="toast-content"><div class="toast-title">${title}</div><div class="toast-msg">${message}</div></div>`;
+  toast.onclick = () => removeToast(toast);
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => removeToast(toast), 4500);
+}
+function removeToast(toast) {
+  if (!toast.parentNode) return;
+  toast.classList.add('removing');
+  setTimeout(() => toast.remove(), 300);
+}
+
+// ============================
+// SALARY SLIP DOWNLOAD
+// ============================
+function downloadSalarySlip() {
+  if (!currentWorker) return;
+  const att = workerAttendance;
+  const ot  = workerOvertime;
+  const pay = workerPayments;
+  const workDays = att.filter(a=>a.status==='Present').length + att.filter(a=>a.status==='Half Day').length*0.5;
+  const totalOT  = ot.reduce((s,o)=>s+(parseFloat(o.hours)||0),0);
+  const dailyRate = parseFloat(currentWorker.rate||0);
+  const basic    = workDays * dailyRate;
+  const otRate   = dailyRate > 0 ? Math.round(dailyRate / 8) : 0;
+  const otAmt    = totalOT * otRate;
+  const total    = basic + otAmt;
+  const paid     = pay.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  const pending  = Math.max(0, total - paid);
+  const now = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+  const empId = currentWorker.pscId || currentWorker.loginWorkerId || currentWorker.id;
+
+  // Use jsPDF for clean single-page PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.getWidth();
+
+  // Header background
+  doc.setFillColor(249, 115, 22);
+  doc.rect(0, 0, pw, 32, 'F');
+
+  // Company name
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.text('PS Construction', 14, 13);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text('Construction Labour Management System', 14, 20);
+
+  // Slip title (right side)
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.text('SALARY SLIP', pw - 14, 13, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.text('Issued: ' + now, pw - 14, 20, { align: 'right' });
+
+  // Employee Info section
+  doc.setTextColor(0,0,0);
+  doc.setFillColor(248,249,250);
+  doc.rect(0, 34, pw, 28, 'F');
+
+  const col1 = 14, col2 = pw/2 + 5;
+  doc.setFontSize(7.5);
+  doc.setTextColor(136,136,136);
+  doc.setFont('helvetica','normal');
+  doc.text('EMPLOYEE NAME', col1, 42);
+  doc.text('EMPLOYEE ID', col2, 42);
+  doc.text('PHONE', col1, 54);
+  doc.text('ASSIGNED SITE', col2, 54);
+
+  doc.setTextColor(0,0,0);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text(currentWorker.name || '—', col1, 48);
+  doc.text(empId, col2, 48);
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(60,60,60);
+  doc.text(currentWorker.phone || '—', col1, 59);
+  doc.text(currentWorker.site || '—', col2, 59);
+
+  // Table header
+  let y = 72;
+  doc.setFillColor(243,244,246);
+  doc.rect(14, y, pw - 28, 8, 'F');
+  doc.setTextColor(102,102,102);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.text('DESCRIPTION', 18, y + 5.5);
+  doc.text('AMOUNT', pw - 18, y + 5.5, { align: 'right' });
+
+  // Rows
+  const rows = [
+    [`Basic Wages (${workDays} days × ₹${dailyRate.toLocaleString('en-IN')})`, `Rs.${basic.toLocaleString('en-IN')}`],
+    [`Overtime (${totalOT} hrs × Rs.${otRate}/hr)`, `Rs.${otAmt.toLocaleString('en-IN')}`],
+    [`Extra / Advance`, `Rs.${Math.max(0,paid-total).toLocaleString('en-IN')}`],
+  ];
+
+  y += 8;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  rows.forEach((row, i) => {
+    if (i % 2 === 0) {
+      doc.setFillColor(255,255,255);
+    } else {
+      doc.setFillColor(252,252,252);
+    }
+    doc.rect(14, y, pw - 28, 8, 'F');
+    doc.setTextColor(40,40,40);
+    doc.text(row[0], 18, y + 5.5);
+    doc.text(row[1], pw - 18, y + 5.5, { align: 'right' });
+    // bottom border
+    doc.setDrawColor(230,230,230);
+    doc.line(14, y+8, pw-14, y+8);
+    y += 8;
+  });
+
+  // Total Salary row
+  doc.setFillColor(255, 247, 237);
+  doc.rect(14, y, pw - 28, 9, 'F');
+  doc.setTextColor(249,115,22);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.text('TOTAL SALARY', 18, y + 6);
+  doc.text(`Rs.${total.toLocaleString('en-IN')}`, pw - 18, y + 6, { align: 'right' });
+  y += 9;
+
+  // Amount Paid
+  doc.setFillColor(255,255,255);
+  doc.rect(14, y, pw - 28, 8, 'F');
+  doc.setTextColor(16,185,129);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.text('Amount Paid', 18, y + 5.5);
+  doc.text(`Rs.${paid.toLocaleString('en-IN')}`, pw - 18, y + 5.5, { align: 'right' });
+  doc.setDrawColor(230,230,230);
+  doc.line(14, y+8, pw-14, y+8);
+  y += 8;
+
+  // Balance Pending
+  doc.setFillColor(254,242,242);
+  doc.rect(14, y, pw - 28, 9, 'F');
+  doc.setTextColor(239,68,68);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.text('BALANCE PENDING', 18, y + 6);
+  doc.text(`Rs.${pending.toLocaleString('en-IN')}`, pw - 18, y + 6, { align: 'right' });
+  y += 9;
+
+  // Border around table
+  doc.setDrawColor(220,220,220);
+  doc.setLineWidth(0.3);
+  doc.rect(14, 72, pw - 28, y - 72);
+
+  // Footer
+  y += 10;
+  doc.setDrawColor(220,220,220);
+  doc.line(14, y, pw - 14, y);
+  doc.setTextColor(170,170,170);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7.5);
+  doc.text('This is a computer-generated salary slip. For queries, contact admin.', pw / 2, y + 5, { align: 'center' });
+
+  doc.save(`Salary_Slip_${empId}_${currentWorker.name || 'Worker'}.pdf`);
+  showToast('success', 'Salary Slip Downloaded', 'PDF saved successfully.');
+}
+
+// ============================
+// REFRESH DASHBOARD
+// ============================
+async function refreshDashboard() {
+  const btn = document.getElementById('refreshBtn');
+  if (btn) {
+    btn.style.opacity = '0.6';
+    btn.style.pointerEvents = 'none';
+    const icon = btn.querySelector('svg');
+    if (icon) icon.style.animation = 'spin 0.7s linear infinite';
+  }
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  await loadDashboard();
+  if (btn) {
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    const icon = btn.querySelector('svg');
+    if (icon) icon.style.animation = '';
+  }
+  showToast('success', 'Refreshed', 'Dashboard data has been updated.');
+}
+
+// ============================
+// INACTIVITY TIMER
+// ============================
+let inactivityTimer = null;
+let countdownInterval = null;
+let inactivitySeconds = 0;
+const INACTIVITY_LIMIT = 5 * 60; // 5 minutes
+const WARNING_AT = INACTIVITY_LIMIT - 60;
+
+function startInactivityTimer() {
+  stopInactivityTimer();
+  inactivitySeconds = 0;
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt =>
+    document.addEventListener(evt, resetInactivity, { passive: true })
+  );
+  countdownInterval = setInterval(() => {
+    inactivitySeconds++;
+    if (inactivitySeconds >= WARNING_AT) {
+      const remaining = INACTIVITY_LIMIT - inactivitySeconds;
+      document.getElementById('inactivityCountdown').textContent = remaining;
+      document.getElementById('inactivityWarn').classList.add('show');
+    }
+    if (inactivitySeconds >= INACTIVITY_LIMIT) {
+      showToast('warn', 'Session Expired', 'You have been logged out due to inactivity.');
+      setTimeout(doLogout, 1500);
+    }
+  }, 1000);
+}
+function resetInactivity() {
+  inactivitySeconds = 0;
+  document.getElementById('inactivityWarn').classList.remove('show');
+}
+function stopInactivityTimer() {
+  clearInterval(countdownInterval);
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt =>
+    document.removeEventListener(evt, resetInactivity)
+  );
+}
+
+// ============================
+// WHATSAPP & ADMIN
+// ============================
+function openWhatsApp() {
+  const adminPhone = '919410228881';
+  const msg = encodeURIComponent(`Hi, I am ${currentWorker?.name || 'a worker'} (ID: ${currentWorker?.id || ''}). I need assistance.`);
+  window.open(`https://wa.me/${adminPhone}?text=${msg}`, '_blank');
+}
+
+function showContactAdmin() {
+  // Direct WhatsApp to admin
+  openWhatsApp();
+}
+
+// ============================
+// INIT
+// ============================
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  checkAuth(); // This now clears session and shows login
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) backdrop.classList.add('hidden');
+    });
+  });
+  // Animated brand name
+  animateBrandName();
 });
 
-// ─── TOAST ───
-function showToast(msg, type = 'info') {
-  const icons = { success: 'fa-check', error: 'fa-times', info: 'fa-info', warn: 'fa-exclamation-triangle' };
-  const wrap = document.getElementById('toastWrap');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.innerHTML = `<div class="toast-icon"><i class="fas ${icons[type]||'fa-info'}"></i></div><span>${esc(msg)}</span>`;
-  wrap.appendChild(t);
-  setTimeout(() => {
-    t.classList.add('removing');
-    setTimeout(() => t.remove(), 300);
-  }, 3000);
-}
-
-// ─── HELPERS ───
-function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function formatDate(d) {
-  if (!d) return '—';
-  try { return new Date(d + 'T12:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
-  catch { return d; }
-}
-function emptyRow(cols, msg) {
-  return `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-state-icon"><i class="fas fa-inbox"></i></div><div class="empty-state-title">${msg}</div><div class="empty-state-sub">Add some records to get started</div></div></td></tr>`;
+function animateBrandName() {
+  const el = document.getElementById('animatedBrandName');
+  if (!el) return;
+  const text = 'PS Construction';
+  const accentChars = [0, 1]; // P and S are accent colored
+  el.innerHTML = text.split('').map((ch, i) => {
+    const isAccent = accentChars.includes(i);
+    const delay = (i * 0.05 + 0.1).toFixed(2);
+    return `<span class="brand-char${isAccent ? ' accent' : ''}" style="animation-delay:${delay}s">${ch === ' ' ? '&nbsp;' : ch}</span>`;
+  }).join('');
 }
 </script>
 <script>
