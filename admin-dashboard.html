@@ -1303,8 +1303,13 @@ select.form-input { cursor: pointer; }
 
 <script>
 // ─── ADMIN AUTH ───
-// DELETE PIN for labour deletion
-const DELETE_PIN = '1234';
+// Dynamic DELETE PIN: aaj ki date ka DDMM format (e.g. 26 April = "2604")
+function getDeletePin() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  return dd + mm;
+}
 
 // Inactivity logout (5 minutes)
 let adminInactivityTimer = null;
@@ -1400,17 +1405,17 @@ function showPinPopup(title, msg, onConfirm) {
     <div style="width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;color:#ef4444"><i class="fas fa-lock"></i></div>
     <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px">${esc(title)}</div>
     <div style="color:var(--text2);font-size:13px;margin-bottom:18px">${esc(msg)}</div>
-    <input id="pinPopupInput" type="password" maxlength="10" placeholder="Delete PIN daalen" style="width:100%;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:4px;margin-bottom:16px" oninput="this.style.borderColor=''" onkeydown="if(event.key==='Enter')document.getElementById('pinConfirmBtn').click()">
+    <input id="pinPopupInput" type="password" maxlength="4" placeholder="DDMM format (e.g. 2604)" style="width:100%;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:4px;margin-bottom:16px" oninput="this.style.borderColor=''" onkeydown="if(event.key==='Enter')document.getElementById('pinConfirmBtn').click()">
     <div style="display:flex;gap:10px;justify-content:center">
       <button onclick="document.getElementById('pinPopupOverlay').remove()" style="flex:1;height:40px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
       <button id="pinConfirmBtn" onclick="
         var v=document.getElementById('pinPopupInput').value;
         if(v===window._pinExpected){document.getElementById('pinPopupOverlay').remove();if(window._pinCb){window._pinCb();window._pinCb=null;}}
-        else{document.getElementById('pinPopupInput').style.borderColor='#ef4444';document.getElementById('pinPopupInput').value='';document.getElementById('pinPopupInput').placeholder='Galat PIN!';}
+        else{document.getElementById('pinPopupInput').style.borderColor='#ef4444';document.getElementById('pinPopupInput').value='';document.getElementById('pinPopupInput').placeholder='Galat Password! DDMM try karen';}
       " style="flex:1;height:40px;border-radius:9px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;font-size:13px;font-weight:600;cursor:pointer"><i class="fas fa-trash"></i> Delete</button>
     </div>
   </div>`;
-  window._pinExpected = DELETE_PIN;
+  window._pinExpected = getDeletePin();
   window._pinCb = onConfirm;
   document.body.appendChild(overlay);
   setTimeout(() => document.getElementById('pinPopupInput')?.focus(), 100);
@@ -1638,10 +1643,12 @@ function showPinPopup(title, msg, onConfirm) {
 const firebaseConfig = {
   apiKey: "AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
   authDomain: "ps-construction-tech.firebaseapp.com",
+  databaseURL: "https://ps-construction-tech-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ps-construction-tech",
-  storageBucket: "ps-construction-tech.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "ps-construction-tech.firebasestorage.app",
+  messagingSenderId: "417310475711",
+  appId: "1:417310475711:web:a8c25cb91eaae4f7610d0a",
+  measurementId: "G-3MECQJ5P0T"
 };
 
 let db = null;
@@ -2082,6 +2089,13 @@ async function saveAttendance() {
 
   if (!labourId || !date) { showToast('Please select worker and date', 'error'); return; }
 
+  // Future date check
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (date > todayStr) {
+    showScreenPopup('⛔ Future Date Not Allowed', `Aaj se aage ki date (${formatDate(date)}) ke liye attendance mark nahi ho sakti.\n\nSirf aaj ya pehle ki dates allowed hain.`, 'error');
+    return;
+  }
+
   const data = { labourId, date, status };
   const id = 'a_' + Date.now();
 
@@ -2196,18 +2210,37 @@ async function savePayment() {
 
 // ─── DELETE ───
 function confirmDelete(type, id) {
-  const l = labours.find(x => x.id === id);
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const hint = 'Aaj ka password: ' + dd + mm + ' (Date' + dd + ' + Month' + mm + ')';
+
+  const typeLabels = { labour: 'Worker', attendance: 'Attendance Record', overtime: 'Overtime Record', payment: 'Payment Record' };
+  const label = typeLabels[type] || 'Record';
+
+  let subjectName = '';
   if (type === 'labour') {
-    showPinPopup(
-      '🔐 Worker Delete — PIN Darj Karen',
-      `"${l?.name || 'Worker'}" ko delete karne ke liye admin PIN daalen. Yeh amal wapas nahi ho sakta.`,
-      () => doDelete('labour', id)
-    );
-  } else {
-    let msg = 'Kya aap yeh record delete karna chahte hain? Yeh wapas nahi hoga.';
-    deleteCallback = () => doDelete(type, id);
-    openModal('confirmModal');
+    const lx = labours.find(x => x.id === id);
+    subjectName = lx && lx.name ? '"' + lx.name + '"' : 'Worker';
+  } else if (type === 'attendance') {
+    const ax = attendance.find(x => x.id === id);
+    const lnA = labours.find(x => x.id === ax?.labourId)?.name || '';
+    subjectName = lnA ? '"' + lnA + '" ka record' : 'Record';
+  } else if (type === 'overtime') {
+    const ox = overtime.find(x => x.id === id);
+    const lnO = labours.find(x => x.id === ox?.labourId)?.name || '';
+    subjectName = lnO ? '"' + lnO + '" ka record' : 'Record';
+  } else if (type === 'payment') {
+    const px = payments.find(x => x.id === id);
+    const lnP = labours.find(x => x.id === px?.labourId)?.name || '';
+    subjectName = lnP ? '"' + lnP + '" ka record' : 'Record';
   }
+
+  showPinPopup(
+    label + ' Delete — Password Darj Karen',
+    subjectName + ' ko delete karne ke liye aaj ki date ka password daalen. ' + hint + ' | Yeh amal wapas nahi ho sakta.',
+    function() { doDelete(type, id); }
+  );
 }
 
 async function executeDelete() {
