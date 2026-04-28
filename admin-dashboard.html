@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PS Construction — Worker Management</title>
-  <link rel="icon" type="image/png" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -933,35 +933,145 @@ select.form-input { cursor: pointer; }
   .stats-grid { grid-template-columns: 1fr; }
   .detail-stats { grid-template-columns: 1fr; }
 }
-#google_translate_element{
+/* ─── INDEX-STYLE ENHANCEMENTS ─── */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #D4A017, #f97316, #D4A017, transparent);
+  background-size: 200%;
+  animation: shimmerBar 3s linear infinite;
+  z-index: 2;
+}
+@keyframes shimmerBar { 0%{background-position:0%} 100%{background-position:200%} }
+.topbar { position: relative; }
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(37,99,235,0.5), rgba(212,160,23,0.5), transparent);
+  background-size: 200%;
+  animation: shimmerBar 4s linear infinite;
+}
+.logo-img-round {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(212,160,23,0.8);
+  background: white;
+  padding: 2px;
+  box-shadow: 0 0 0 3px rgba(212,160,23,0.2), 0 4px 14px rgba(37,99,235,0.35);
+  animation: logoFloat 4s ease-in-out infinite;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.login-logo-img {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(212,160,23,0.85);
+  background: white;
+  padding: 3px;
+  box-shadow: 0 0 0 6px rgba(37,99,235,0.1), 0 8px 28px rgba(37,99,235,0.3);
+  animation: logoFloat 4s ease-in-out infinite;
+  box-sizing: border-box;
+}
+.loading-logo-img {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(212,160,23,0.8);
+  background: white;
+  padding: 3px;
+  box-shadow: 0 0 0 8px rgba(37,99,235,0.1), 0 10px 32px rgba(37,99,235,0.35);
+  animation: logoFloat 2s ease-in-out infinite;
+  box-sizing: border-box;
+}
+@keyframes logoFloat {
+  0%,100% { transform: translateY(0); filter: drop-shadow(0 2px 8px rgba(212,160,23,0.4)); }
+  50% { transform: translateY(-5px); filter: drop-shadow(0 6px 16px rgba(212,160,23,0.7)); }
+}
+.lang-switcher-sidebar {
   display: flex;
-  align-items: center;
-  max-width: 140px;
-  overflow: hidden;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  margin: 4px 0 6px;
 }
-
-.goog-te-gadget{
-  font-size: 0 !important;
-}
-
-.goog-te-gadget select{
-  max-width: 100%;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 13px;
+.lang-btn-s {
+  flex: 1;
+  padding: 7px 4px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
   cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(200,212,240,0.5);
+  transition: all 0.22s ease;
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
 }
-@media (max-width: 768px){
-  #google_translate_element{
-    max-width: 100px;
-  }
-
-  .goog-te-gadget select{
-    font-size: 12px;
-    padding: 5px 8px;
-  }
+.lang-btn-s.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  box-shadow: 0 3px 10px rgba(37,99,235,0.4);
+  transform: translateY(-1px);
 }
+.lang-btn-s:hover:not(.active) { background: rgba(255,255,255,0.1); color: #fff; }
+.nav-item { overflow: hidden; }
+.nav-item i { transition: transform 0.3s ease; }
+.nav-item:hover i { transform: rotate(-8deg) scale(1.15); }
+.btn::before {
+  content: '';
+  position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  transition: left 0.5s;
+}
+.btn:hover::before { left: 150%; }
+.icon-btn i { transition: transform 0.3s; display: block; }
+.icon-btn:hover i { transform: rotate(15deg) scale(1.1); }
+.cursor-dot {
+  position: fixed; width: 8px; height: 8px;
+  background: #2563eb; border-radius: 50%;
+  pointer-events: none; z-index: 99999;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 10px #2563eb;
+}
+.cursor-ring {
+  position: fixed; width: 30px; height: 30px;
+  border: 2px solid rgba(37,99,235,0.45); border-radius: 50%;
+  pointer-events: none; z-index: 99998;
+  transform: translate(-50%,-50%);
+  transition: width 0.2s, height 0.2s;
+}
+.ripple-effect {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transform: scale(0); animation: rippleA 0.6s linear;
+  pointer-events: none;
+}
+@keyframes rippleA { to { transform: scale(4); opacity: 0; } }
+@keyframes cardPop { 0%{opacity:0;transform:translateY(18px) scale(0.96)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+.stat-card { animation: cardPop 0.5s ease both; }
+.stat-card:nth-child(1){animation-delay:0.05s}
+.stat-card:nth-child(2){animation-delay:0.1s}
+.stat-card:nth-child(3){animation-delay:0.15s}
+.stat-card:nth-child(4){animation-delay:0.2s}
+.avatar-logo {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(212,160,23,0.7);
+  background: white;
+  padding: 2px;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.22s ease;
+}
+.avatar-logo:hover { transform: scale(1.1); box-shadow: 0 0 0 3px rgba(212,160,23,0.5); }
 .nav-right{
   display:flex;
   align-items:center;
@@ -972,11 +1082,14 @@ select.form-input { cursor: pointer; }
 </head>
 
 <body>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
 
 <!-- Loading Screen -->
 <div class="loading-screen" id="loadingScreen">
-  <div class="loading-logo">PS<span>Construction</span></div>
-  <div class="loader"></div>
+  <img src="icon-512.png" class="loading-logo-img" alt="PS Logo" onerror="this.style.display='none'">
+  <div class="loading-logo" style="display:none" id="loadingLogoFallback">PS<span>Construction</span></div>
+  <div class="loader" style="margin-top:8px;"></div>
   <p style="color:var(--text2);font-size:13px;">Loading your dashboard…</p>
 </div>
 
@@ -984,14 +1097,14 @@ select.form-input { cursor: pointer; }
 <div id="adminLoginPage" class="login-wrap">
   <div class="login-box">
     <div class="login-header">
-      <div class="login-logo-icon"><i class="fas fa-hard-hat"></i></div>
+      <img src="icon-512.png" class="login-logo-img" alt="PS Logo" onerror="this.outerHTML='<div class=\'login-logo-icon\'><i class=\'fas fa-hard-hat\'></i></div>'">
       <div class="login-title">PS Construction Admin</div>
       <div class="login-sub">Labour Management System</div>
     </div>
     <div class="login-form">
       <div class="form-group">
         <label class="form-label">Username / Email</label>
-        <input type="text" class="form-input" id="adminEmail" placeholder="admin@psconstruction.com" >
+        <input type="text" class="form-input" id="adminEmail" placeholder="admin@psconstruction.com" onkeydown="if(event.key==='Enter')doAdminLogin()">
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
@@ -1015,7 +1128,7 @@ select.form-input { cursor: pointer; }
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="logo-mark">
-        <div class="logo-icon"><i class="fas fa-hard-hat"></i></div>
+        <img src="icon-512.png" class="logo-img-round" alt="PS Logo" onerror="this.outerHTML='<div class=\'logo-icon\'><i class=\'fas fa-hard-hat\'></i></div>'">
         <div class="logo-text">
           <div class="brand">PS Construction</div>
           <div class="tagline">Worker Management</div>
@@ -1023,31 +1136,35 @@ select.form-input { cursor: pointer; }
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-section-label" style="margin-top:8px;">Language</div>
-      <div id="google_translate_element"></div>
+      <div class="nav-section-label" style="margin-top:8px;">Language / भाषा</div>
+      <div class="lang-switcher-sidebar">
+        <button class="lang-btn-s active" onclick="setDashLang('en')" id="dlbtn-en">EN</button>
+        <button class="lang-btn-s" onclick="setDashLang('hi')" id="dlbtn-hi">हिंदी</button>
+        <button class="lang-btn-s" onclick="setDashLang('hl')" id="dlbtn-hl">HIN</button>
+      </div>
       <div class="nav-section-label" style="margin-top:8px;">Main</div>
       <div class="nav-item active" onclick="showPage('dashboard')">
-        <i class="fas fa-chart-line"></i><span>Dashboard</span>
+        <i class="fas fa-chart-line"></i><span data-di18n="nav_dashboard">Dashboard</span>
       </div>
       <div class="nav-item" onclick="showPage('labours')">
-        <i class="fas fa-users"></i><span>Labour Registry</span>
+        <i class="fas fa-users"></i><span data-di18n="nav_labours">Labour Registry</span>
       </div>
       <div class="nav-section-label" style="margin-top:8px;">Operations</div>
       <div class="nav-item" onclick="showPage('attendance')">
-        <i class="fas fa-calendar-check"></i><span>Attendance</span>
+        <i class="fas fa-calendar-check"></i><span data-di18n="nav_att">Attendance</span>
       </div>
       <div class="nav-item" onclick="showPage('overtime')">
-        <i class="fas fa-clock"></i><span>Overtime</span>
+        <i class="fas fa-clock"></i><span data-di18n="nav_ot">Overtime</span>
       </div>
       <div class="nav-item" onclick="showPage('payments')">
-        <i class="fas fa-wallet"></i><span>Payments</span>
+        <i class="fas fa-wallet"></i><span data-di18n="nav_pay">Payments</span>
       </div>
       <div class="nav-section-label" style="margin-top:8px;">Reports</div>
       <div class="nav-item" onclick="showPage('salary')">
-        <i class="fas fa-file-invoice-dollar"></i><span>Salary Report</span>
+        <i class="fas fa-file-invoice-dollar"></i><span data-di18n="nav_salary">Salary Report</span>
       </div>
       <div class="nav-item" onclick="showPage('auditlog')">
-        <i class="fas fa-history"></i><span>Audit Log</span>
+        <i class="fas fa-history"></i><span data-di18n="nav_audit">Audit Log</span>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -1074,7 +1191,7 @@ select.form-input { cursor: pointer; }
           <i class="fas fa-moon" id="themeIcon"></i>
         </button>
         <button class="icon-btn" onclick="refreshData()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
-        <div class="avatar" title="Admin">PS</div>
+        <img src="icon-512.png" class="avatar-logo" alt="PS" title="PS Construction Admin" onerror="this.outerHTML='<div class=\'avatar\' title=\'Admin\'>PS</div>'">
       </div>
     </header>
 
@@ -1083,25 +1200,25 @@ select.form-input { cursor: pointer; }
       <div class="stats-grid">
         <div class="stat-card animate-in" style="--card-color:rgba(249,115,22,0.1);--card-accent:#f97316;">
           <div class="stat-card-icon"><i class="fas fa-users"></i></div>
-          <div class="stat-card-label">Total Workers</div>
+          <div class="stat-card-label" data-di18n="stat_workers">Total Workers</div>
           <div class="stat-card-value" id="statWorkers">0</div>
           <div class="stat-card-sub">Active on all sites</div>
         </div>
         <div class="stat-card animate-in" style="--card-color:rgba(59,130,246,0.1);--card-accent:#3b82f6;">
           <div class="stat-card-icon"><i class="fas fa-rupee-sign"></i></div>
-          <div class="stat-card-label">Total Salary</div>
+          <div class="stat-card-label" data-di18n="stat_salary">Total Salary</div>
           <div class="stat-card-value" id="statSalary">₹0</div>
           <div class="stat-card-sub">Gross payable</div>
         </div>
         <div class="stat-card animate-in" style="--card-color:rgba(16,185,129,0.1);--card-accent:#10b981;">
           <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-card-label">Total Paid</div>
+          <div class="stat-card-label" data-di18n="stat_paid">Total Paid</div>
           <div class="stat-card-value" id="statPaid">₹0</div>
           <div class="stat-card-sub">Payments made</div>
         </div>
         <div class="stat-card animate-in" style="--card-color:rgba(239,68,68,0.1);--card-accent:#ef4444;">
           <div class="stat-card-icon"><i class="fas fa-hourglass-half"></i></div>
-          <div class="stat-card-label">Pending</div>
+          <div class="stat-card-label" data-di18n="stat_pending">Pending</div>
           <div class="stat-card-value" id="statPending">₹0</div>
           <div class="stat-card-sub">Yet to be paid</div>
         </div>
@@ -1267,8 +1384,8 @@ select.form-input { cursor: pointer; }
       <div class="section-header">
         <div class="section-title">Audit Log</div>
         <div class="section-actions">
-          <button class="btn btn-secondary btn-sm" onclick="clearAuditLog()" title="Clear all logs">
-            <i class="fas fa-trash"></i> Clear Log
+          <button class="btn btn-secondary btn-sm" onclick="clearAuditLog()" title="Audit logs auto-expire in 15 days">
+            <i class="fas fa-shield-halved"></i> Log Info
           </button>
         </div>
       </div>
@@ -2420,7 +2537,8 @@ function printSlipFor(id) {
         <p style="margin:0;font-size:12px;color:#999;">Generated: ${new Date().toLocaleDateString('en-IN')}</p>
       </div>
       <table style="width:100%;margin-bottom:20px;">
-        <tr><td style="padding:4px 0;color:#666;font-size:13px;width:40%">Worker Name</td><td style="font-weight:bold">${esc(l.name)}</td></tr>
+        <tr><td style="padding:4px 0;color:#666;font-size:13px;width:40%">Worker ID</td><td style="font-weight:bold;color:#2563eb">${esc(l.pscId||'—')}</td></tr>
+        <tr><td style="padding:4px 0;color:#666;font-size:13px">Worker Name</td><td style="font-weight:bold">${esc(l.name)}</td></tr>
         <tr><td style="padding:4px 0;color:#666;font-size:13px">Labour Type</td><td>${esc(l.type||'—')}</td></tr>
         <tr><td style="padding:4px 0;color:#666;font-size:13px">Site / Project</td><td>${esc(l.site||'—')}</td></tr>
         <tr><td style="padding:4px 0;color:#666;font-size:13px">Daily Rate</td><td>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</td></tr>
@@ -2447,9 +2565,51 @@ function printSlipFor(id) {
 
 function printAllSlips() {
   if (!labours.length) { showToast('No workers to print', 'warn'); return; }
-  showToast('Opening salary report…', 'info');
+  showToast('Generating combined PDF report…', 'info');
   setTimeout(() => {
-    labours.forEach(l => printSlipFor(l.id));
+    let allSlipsHTML = '';
+    labours.forEach((l, idx) => {
+      const lAtt = attendance.filter(a => a.labourId === l.id);
+      const lOT  = overtime.filter(o => o.labourId === l.id);
+      const lPay = payments.filter(p => p.labourId === l.id);
+      const days = lAtt.filter(a => a.status === 'Present').length + lAtt.filter(a => a.status === 'Half Day').length * 0.5;
+      const otAmt = lOT.reduce((s,o) => s + (parseFloat(o.hours)||0)*(parseFloat(o.rate)||0), 0);
+      const baseSal = days * parseFloat(l.rate||0);
+      const totalSal = baseSal + otAmt;
+      const paid = lPay.reduce((s,p) => s + parseFloat(p.amount||0), 0);
+      const pending = Math.max(0, totalSal - paid);
+      allSlipsHTML += `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto ${idx < labours.length-1 ? ';page-break-after:always' : ''};border:2px solid #333;padding:30px;${idx > 0 ? 'margin-top:40px;' : ''}">
+          <div style="text-align:center;border-bottom:2px solid #f97316;padding-bottom:16px;margin-bottom:20px;">
+            <h1 style="color:#f97316;margin:0;font-size:24px;">PS Construction</h1>
+            <p style="margin:4px 0;color:#666;font-size:13px;">Labour Salary Slip</p>
+            <p style="margin:0;font-size:12px;color:#999;">Generated: ${new Date().toLocaleDateString('en-IN')}</p>
+          </div>
+          <table style="width:100%;margin-bottom:20px;">
+            <tr><td style="padding:4px 0;color:#666;font-size:13px;width:40%">Worker ID</td><td style="font-weight:bold;color:#2563eb">${esc(l.pscId||'—')}</td></tr>
+            <tr><td style="padding:4px 0;color:#666;font-size:13px">Worker Name</td><td style="font-weight:bold">${esc(l.name)}</td></tr>
+            <tr><td style="padding:4px 0;color:#666;font-size:13px">Labour Type</td><td>${esc(l.type||'—')}</td></tr>
+            <tr><td style="padding:4px 0;color:#666;font-size:13px">Site / Project</td><td>${esc(l.site||'—')}</td></tr>
+            <tr><td style="padding:4px 0;color:#666;font-size:13px">Daily Rate</td><td>₹${parseFloat(l.rate||0).toLocaleString('en-IN')}</td></tr>
+            ${l.phone ? `<tr><td style="padding:4px 0;color:#666;font-size:13px">Phone</td><td>${esc(l.phone)}</td></tr>` : ''}
+          </table>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+            <tr style="background:#f5f5f5;"><th style="padding:8px;text-align:left;border:1px solid #ddd">Description</th><th style="padding:8px;text-align:right;border:1px solid #ddd">Amount</th></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd">Basic Salary (${days} days × ₹${parseFloat(l.rate||0).toLocaleString('en-IN')})</td><td style="padding:8px;text-align:right;border:1px solid #ddd">₹${baseSal.toLocaleString('en-IN')}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd">Overtime Allowance</td><td style="padding:8px;text-align:right;border:1px solid #ddd">₹${otAmt.toLocaleString('en-IN')}</td></tr>
+            <tr style="background:#fff3e0;font-weight:bold;"><td style="padding:10px;border:1px solid #ddd">TOTAL SALARY</td><td style="padding:10px;text-align:right;border:1px solid #ddd;color:#f97316">₹${totalSal.toLocaleString('en-IN')}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd">Total Paid</td><td style="padding:8px;text-align:right;border:1px solid #ddd;color:green">₹${paid.toLocaleString('en-IN')}</td></tr>
+            <tr style="font-weight:bold;background:${pending > 0 ? '#fee2e2' : '#dcfce7'};"><td style="padding:10px;border:1px solid #ddd">BALANCE PENDING</td><td style="padding:10px;text-align:right;border:1px solid #ddd;color:${pending > 0 ? 'red' : 'green'}">₹${pending.toLocaleString('en-IN')}</td></tr>
+          </table>
+          <div style="margin-top:40px;display:flex;justify-content:space-between;">
+            <div><div style="border-top:1px solid #333;width:160px;padding-top:6px;font-size:12px;text-align:center">Worker Signature</div></div>
+            <div><div style="border-top:1px solid #333;width:160px;padding-top:6px;font-size:12px;text-align:center">Authorized Signature</div></div>
+          </div>
+        </div>`;
+    });
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>PS Construction — All Salary Slips</title><style>@media print{.no-print{display:none}body{margin:0;padding:20px}}</style></head><body><div class="no-print" style="text-align:center;padding:14px;background:#2563eb;color:white;font-family:Arial;font-size:14px;font-weight:600;margin-bottom:20px;">📄 ${labours.length} Worker Slips — <button onclick="window.print()" style="background:white;color:#2563eb;border:none;border-radius:6px;padding:6px 16px;font-weight:700;cursor:pointer;font-size:13px;">🖨️ Print / Save PDF</button></div>${allSlipsHTML}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
+    win.document.close();
   }, 300);
 }
 
@@ -2585,17 +2745,22 @@ function addAuditLog(type, module, title, detail) {
 function loadAuditLogs() {
   try {
     const saved = localStorage.getItem('auditLogs');
-    auditLogs = saved ? JSON.parse(saved) : [];
+    const parsed = saved ? JSON.parse(saved) : [];
+    // Auto-expire logs older than 15 days
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 15);
+    auditLogs = parsed.filter(l => {
+      try { return new Date(l.time) >= cutoff; } catch(e) { return true; }
+    });
+    // Save cleaned list back
+    if (parsed.length !== auditLogs.length) {
+      try { localStorage.setItem('auditLogs', JSON.stringify(auditLogs)); } catch(e) {}
+    }
   } catch(e) { auditLogs = []; }
 }
 
 function clearAuditLog() {
-  showScreenPopup('Clear Audit Log', 'Kya aap saare audit logs delete karna chahte hain? Yeh wapas nahi hoga.', 'warn', () => {
-    auditLogs = [];
-    try { localStorage.removeItem('auditLogs'); } catch(e) {}
-    renderAuditLog();
-    showToast('Audit log cleared', 'success');
-  });
+  showScreenPopup('🔒 Audit Log Protected', 'Audit logs ko manually delete nahi kiya ja sakta. Yeh automatically 15 din baad expire ho jaate hain. Yeh security feature hai jo kisi bhi admin ki sabhi activity ko track rakhta hai.', 'info');
 }
 
 function renderAuditLog() {
@@ -2710,17 +2875,101 @@ document.addEventListener('click', function(e) {
     box.classList.remove('open');
   }
 });
-</script>
-<script>
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement({
-    pageLanguage: 'en',
-    includedLanguages: 'en,hi',
-    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-  }, 'google_translate_element');
+
+// ─── CURSOR TRAIL ───
+(function(){
+  const dot = document.getElementById('cursorDot');
+  const ring = document.getElementById('cursorRing');
+  if(!dot || !ring) return;
+  let mx=0,my=0,rx=0,ry=0;
+  window.addEventListener('mousemove',e=>{
+    mx=e.clientX; my=e.clientY;
+    dot.style.left=mx+'px'; dot.style.top=my+'px';
+  });
+  function anim(){
+    rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    requestAnimationFrame(anim);
+  }
+  anim();
+  document.querySelectorAll('button,.btn,.nav-item,.stat-card,.modal-close,.icon-btn').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{ ring.style.width='50px';ring.style.height='50px'; });
+    el.addEventListener('mouseleave',()=>{ ring.style.width='30px';ring.style.height='30px'; });
+  });
+})();
+
+// ─── RIPPLE EFFECT ───
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.btn, .icon-btn, .nav-item, .btn-login-submit');
+  if(!btn) return;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple-effect';
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px;position:absolute;z-index:0;';
+  btn.style.position = 'relative'; btn.style.overflow = 'hidden';
+  btn.appendChild(ripple);
+  setTimeout(()=>ripple.remove(), 600);
+});
+
+// ─── MANUAL LANGUAGE SYSTEM ───
+const dashTranslations = {
+  en: {
+    nav_dashboard:'Dashboard', nav_labours:'Labour Registry', nav_att:'Attendance',
+    nav_ot:'Overtime', nav_pay:'Payments', nav_salary:'Salary Report', nav_audit:'Audit Log',
+    stat_workers:'Total Workers', stat_salary:'Total Salary', stat_paid:'Total Paid', stat_pending:'Pending',
+    page_dashboard:'Dashboard', page_labours:'Labour Registry', page_att:'Attendance',
+    page_ot:'Overtime', page_pay:'Payments', page_salary:'Salary Report', page_audit:'Audit Log',
+    add_labour:'Add Labour', mark_att:'Mark Attendance', add_ot:'Add Overtime',
+    record_pay:'Record Payment', print_report:'Print Report', clear_log:'Clear Log',
+    login_title:'PS Construction Admin', login_sub:'Labour Management System',
+    login_btn:'Sign In to Dashboard', search_ph:'Search labourers…'
+  },
+  hi: {
+    nav_dashboard:'डैशबोर्ड', nav_labours:'मजदूर रजिस्ट्री', nav_att:'उपस्थिति',
+    nav_ot:'ओवरटाइम', nav_pay:'भुगतान', nav_salary:'वेतन रिपोर्ट', nav_audit:'ऑडिट लॉग',
+    stat_workers:'कुल मजदूर', stat_salary:'कुल वेतन', stat_paid:'कुल भुगतान', stat_pending:'बकाया',
+    page_dashboard:'डैशबोर्ड', page_labours:'मजदूर रजिस्ट्री', page_att:'उपस्थिति',
+    page_ot:'ओवरटाइम', page_pay:'भुगतान', page_salary:'वेतन रिपोर्ट', page_audit:'ऑडिट लॉग',
+    add_labour:'मजदूर जोड़ें', mark_att:'उपस्थिति दर्ज करें', add_ot:'ओवरटाइम जोड़ें',
+    record_pay:'भुगतान दर्ज करें', print_report:'रिपोर्ट प्रिंट करें', clear_log:'लॉग साफ करें',
+    login_title:'PS कंस्ट्रक्शन एडमिन', login_sub:'श्रम प्रबंधन प्रणाली',
+    login_btn:'डैशबोर्ड में लॉगिन करें', search_ph:'मजदूर खोजें…'
+  },
+  hl: {
+    nav_dashboard:'Dashboard', nav_labours:'Mazdoor Registry', nav_att:'Attendance',
+    nav_ot:'Overtime', nav_pay:'Payment', nav_salary:'Salary Report', nav_audit:'Audit Log',
+    stat_workers:'Kul Mazdoor', stat_salary:'Kul Salary', stat_paid:'Kul Paid', stat_pending:'Baaki',
+    page_dashboard:'Dashboard', page_labours:'Mazdoor Registry', page_att:'Attendance',
+    page_ot:'Overtime', page_pay:'Payment', page_salary:'Salary Report', page_audit:'Audit Log',
+    add_labour:'Mazdoor Jodo', mark_att:'Attendance Lagao', add_ot:'Overtime Jodo',
+    record_pay:'Payment Darj Karo', print_report:'Report Print Karo', clear_log:'Log Hatao',
+    login_title:'PS Construction Admin', login_sub:'Labour Management System',
+    login_btn:'Dashboard Mein Login Karo', search_ph:'Mazdoor dhundho…'
+  }
+};
+let dashLang = 'en';
+function setDashLang(lang) {
+  dashLang = lang;
+  const t = dashTranslations[lang];
+  // Update lang buttons
+  ['en','hi','hl'].forEach(l => {
+    const b = document.getElementById('dlbtn-'+l);
+    if(b) b.classList.toggle('active', l===lang);
+  });
+  // Update elements with data-di18n
+  document.querySelectorAll('[data-di18n]').forEach(el => {
+    const key = el.getAttribute('data-di18n');
+    if(t[key]) el.textContent = t[key];
+  });
+  // Update search placeholder
+  const gs = document.getElementById('globalSearch');
+  if(gs && t.search_ph) gs.placeholder = t.search_ph;
+  // Toast feedback
+  const msgs = {en:'🌐 Language: English', hi:'🌐 भाषा: हिंदी', hl:'🌐 Bhasha: Hinglish'};
+  showToast(msgs[lang]||'Language changed', 'info');
 }
 </script>
 
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
