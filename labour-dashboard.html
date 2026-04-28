@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>PS Panel — Construction Labour Portal</title>
-   <link rel="icon" type="image/png" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -144,6 +144,22 @@ body {
   box-shadow: 0 4px 12px rgba(249,115,22,0.35);
 }
 .brand-icon svg { width: 20px; height: 20px; color: white; }
+/* ============================
+   SPARKLE PARTICLES
+============================ */
+.sparkle-field { position: absolute; inset: 0; pointer-events: none; }
+.sparkle {
+  position: absolute;
+  border-radius: 50%;
+  background: white;
+  animation: sparkleFade var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+  opacity: 0;
+}
+@keyframes sparkleFade {
+  0%, 100% { opacity: 0; transform: scale(0.5) translateY(0); }
+  50% { opacity: var(--max-op, 0.5); transform: scale(1) translateY(-8px); }
+}
+
 /* ============================
    ANIMATED BRAND NAME
 ============================ */
@@ -825,39 +841,276 @@ body {
 .progress-fill.green { background: linear-gradient(90deg, var(--green), #34d399); }
 .progress-fill.red { background: linear-gradient(90deg, var(--red), #f87171); }
 
-#google_translate_element{
+/* ============================
+   MANUAL LANGUAGE SWITCHER
+============================ */
+.lang-switcher {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
-}
-#google_translate_element .goog-te-gadget {
-  font-family: var(--font-body) !important;
-  font-size: 0 !important;
-  color: transparent !important;
-}
-#google_translate_element .goog-te-gadget select {
-  padding: 5px 8px;
-  border-radius: 8px;
+  gap: 4px;
+  background: var(--bg-primary);
   border: 1px solid var(--border-strong);
-  background: var(--bg-glass);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  cursor: pointer;
-  outline: none;
-  backdrop-filter: var(--blur);
-  max-width: 120px;
+  border-radius: 10px;
+  padding: 3px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: visible;
 }
-#google_translate_element .goog-te-gadget-simple {
-  background: transparent !important;
-  border: none !important;
+.lang-btn {
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+.lang-btn.active {
+  background: linear-gradient(135deg, var(--accent), #fb923c);
+  color: white;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+  transform: scale(1.04);
+}
+.lang-btn:not(.active):hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  transform: scale(1.03);
 }
 @media (max-width: 600px) {
-  #google_translate_element .goog-te-gadget select {
-    max-width: 80px;
-    font-size: 0.68rem;
-    padding: 4px 5px;
+  .lang-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
   }
+}
+
+/* ============================
+   LOGO GLOW & PULSE EFFECTS
+============================ */
+.brand-icon {
+  animation: logoPulse 3s ease-in-out infinite !important;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(249,115,22,0.35), 0 0 0 0 rgba(249,115,22,0.2); }
+  50% { box-shadow: 0 4px 20px rgba(249,115,22,0.55), 0 0 0 8px rgba(249,115,22,0); }
+}
+.brand-icon:hover {
+  transform: scale(1.12) rotate(5deg) !important;
+  box-shadow: 0 6px 25px rgba(249,115,22,0.7) !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.login-logo-icon {
+  animation: loginLogoPulse 2.5s ease-in-out infinite;
+}
+@keyframes loginLogoPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(249,115,22,0.35), 0 0 0 0 rgba(249,115,22,0.15); transform: scale(1); }
+  50% { box-shadow: 0 8px 36px rgba(249,115,22,0.6), 0 0 0 12px rgba(249,115,22,0); transform: scale(1.05); }
+}
+
+/* ============================
+   ENHANCED BUTTON ANIMATIONS
+============================ */
+
+/* Ripple effect base */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.btn-ripple:active::after { opacity: 1; transition: none; }
+
+/* Login button shimmer */
+.btn-login {
+  position: relative; overflow: hidden;
+}
+.btn-login::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  animation: btnShimmer 2.5s ease-in-out infinite;
+}
+@keyframes btnShimmer {
+  0% { left: -100%; }
+  50%, 100% { left: 140%; }
+}
+.btn-login:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 12px 28px rgba(249,115,22,0.5) !important;
+}
+.btn-login:active { transform: translateY(0) scale(0.98) !important; }
+
+/* Download button pulse */
+.download-btn {
+  animation: downloadGlow 2s ease-in-out infinite;
+  position: relative; overflow: hidden;
+}
+@keyframes downloadGlow {
+  0%, 100% { box-shadow: 0 4px 14px rgba(59,130,246,0.3); }
+  50% { box-shadow: 0 4px 24px rgba(59,130,246,0.55), 0 0 0 4px rgba(59,130,246,0.1); }
+}
+.download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: btnShimmer 2.8s ease-in-out infinite;
+}
+
+/* Profile action buttons - bounce */
+.profile-action-btn {
+  position: relative; overflow: hidden;
+}
+.profile-action-btn:hover {
+  transform: translateY(-3px) scale(1.05) !important;
+  background: rgba(255,255,255,0.45) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+}
+.profile-action-btn:active { transform: scale(0.96) !important; }
+
+/* Topbar buttons - scale bounce */
+.topbar-btn {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.topbar-btn:hover {
+  transform: scale(1.12) !important;
+  background: var(--bg-card) !important;
+}
+.topbar-btn:active { transform: scale(0.92) !important; }
+
+/* Logout button shake on hover */
+.logout-btn:hover {
+  animation: shakeX 0.5s ease !important;
+}
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Tab buttons - slide underline */
+.tab-btn {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.tab-btn:not(.active):hover { transform: translateY(-1px) scale(1.04) !important; }
+.tab-btn.active { animation: tabPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes tabPop {
+  0% { transform: scale(0.95); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* FAB buttons enhanced */
+.fab {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  position: relative; overflow: hidden;
+}
+.fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.12);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.fab:hover::before { transform: scaleX(1); }
+.fab:hover { transform: translateY(-4px) scale(1.06) !important; }
+.fab:active { transform: scale(0.94) !important; }
+
+/* Modal buttons */
+.btn-primary, .btn-ghost {
+  position: relative; overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.btn-primary:hover { transform: translateY(-2px) scale(1.04) !important; }
+.btn-primary:active { transform: scale(0.96) !important; }
+.btn-ghost:hover { transform: translateY(-1px) scale(1.02) !important; }
+
+/* Summary cards - enhanced hover */
+.summary-card {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.summary-card:hover {
+  transform: translateY(-6px) scale(1.02) !important;
+}
+.summary-card:active { transform: scale(0.98) !important; }
+
+/* Avatar bounce */
+.topbar-avatar {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.topbar-avatar:hover { transform: scale(1.15) rotate(-5deg) !important; }
+
+/* Modal close button */
+.modal-close {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.modal-close:hover { transform: scale(1.15) rotate(90deg) !important; }
+
+/* Form input focus animation */
+.form-input {
+  transition: all 0.25s ease !important;
+}
+.form-input:focus {
+  transform: scale(1.01);
+}
+
+/* Panel hover lift */
+.panel {
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+}
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* BACK button subtle */
+.back-go-btn {
+  transition: all 0.2s ease !important;
+}
+.back-go-btn:hover { transform: translateX(-3px) !important; color: var(--accent) !important; }
+
+/* Loader ring enhanced */
+.loader-ring {
+  animation: spin 0.7s cubic-bezier(0.5,0,0.5,1) infinite !important;
+}
+
+/* Progress fill animation */
+.progress-fill {
+  background: linear-gradient(90deg, var(--green), #34d399, var(--accent2)) !important;
+  background-size: 200% 100% !important;
+  animation: progressFlow 2s linear infinite !important;
+}
+@keyframes progressFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* Brand name letter glow on hover */
+.brand-name:hover .brand-char { color: var(--accent); transition: color 0.2s ease; }
+.brand-name:hover .brand-char:not(.accent) { 
+  animation: letterDance 0.4s ease both;
+}
+@keyframes letterDance {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 </style>
 </head>
@@ -868,10 +1121,12 @@ body {
   <div class="bg-orb"></div>
   <div class="bg-orb"></div>
   <div class="bg-orb"></div>
+  <!-- Sparkle particles -->
+  <div class="sparkle-field" id="sparkleField"></div>
 </div>
 
 <!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
+<div class="loading-overlay hidden" id="loadingOverlay">
   <div class="loader-ring"></div>
   <div class="loading-text">Loading your workspace…</div>
 </div>
@@ -900,17 +1155,38 @@ body {
 <!-- LOGIN PAGE -->
 <div id="loginPage" class="login-page">
   <div class="login-card">
+    <!-- Login Page Language Switcher -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div class="lang-switcher">
+        <button class="lang-btn active" id="loginLangEn" onclick="setLangAll('en')">EN</button>
+        <button class="lang-btn" id="loginLangHi" onclick="setLangAll('hi')">हि</button>
+        <button class="lang-btn" id="loginLangHg" onclick="setLangAll('hg')">HG</button>
+      </div>
+    </div>
     <div class="login-logo">
       <div class="login-logo-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/></svg>
+        <!-- PS Construction Premium Logo -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" width="40" height="40">
+          <!-- Hard hat dome -->
+          <ellipse cx="28" cy="36" rx="18" ry="6" fill="rgba(255,255,255,0.2)"/>
+          <path d="M10 35 Q10 15 28 12 Q46 15 46 35 Z" fill="white" opacity="0.95"/>
+          <!-- Brim -->
+          <rect x="8" y="32" width="40" height="5" rx="2.5" fill="white"/>
+          <!-- Central stripe -->
+          <path d="M16 35 Q28 25 40 35" stroke="#f97316" stroke-width="1.8" fill="none" opacity="0.6"/>
+          <!-- PS text -->
+          <text x="28" y="30" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="12" font-weight="900" fill="#f97316">PS</text>
+          <!-- Shine -->
+          <path d="M18 20 Q22 14 28 13" stroke="rgba(255,255,255,0.5)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
       </div>
-      <div class="login-title">PS Panel</div>
-      <div class="login-sub">Construction Labour Management System</div>
+      <div class="login-title" id="loginTitleEl">PS Panel</div>
+      <div class="login-sub" id="loginSubEl">Management System</div>
     </div>
     <!-- Step 1: Unique ID -->
     <div id="loginStep1">
       <div class="form-group">
-        <label class="form-label">Worker ID (e.g. PSC101)</label>
+        <label class="form-label" id="workerIdLabelEl">Worker ID (e.g. PSC101)</label>
         <input class="form-input" id="loginWorkerId" type="text" placeholder="e.g. PSC001" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')checkWorkerId()"/>
       </div>
       <div class="login-actions">
@@ -949,24 +1225,31 @@ body {
   <!-- Topbar -->
   <nav class="topbar">
     <div class="topbar-brand">
-      <div class="brand-icon" style="width:42px;height:42px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(249,115,22,0.35);">
-        <!-- PS Construction Hard Hat Logo -->
+      <div class="brand-icon" style="width:42px;height:42px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(249,115,22,0.35);cursor:pointer;">
+        <!-- PS Construction Premium Logo -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="34" height="34">
           <!-- Hard hat base -->
-          <ellipse cx="20" cy="26" rx="14" ry="5" fill="rgba(255,255,255,0.25)"/>
+          <ellipse cx="20" cy="28" rx="13" ry="4.5" fill="rgba(255,255,255,0.2)"/>
           <!-- Hat dome -->
-          <path d="M6 26 Q6 10 20 8 Q34 10 34 26 Z" fill="white" opacity="0.95"/>
+          <path d="M7 27 Q7 11 20 9 Q33 11 33 27 Z" fill="white" opacity="0.95"/>
           <!-- Brim -->
-          <rect x="4" y="24" width="32" height="4" rx="2" fill="white"/>
-          <!-- PS text on hat -->
-          <text x="20" y="22" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#f97316">PS</text>
-          <!-- Stripe on hat -->
-          <path d="M10 26 Q20 18 30 26" stroke="#f97316" stroke-width="1.5" fill="none" opacity="0.5"/>
+          <rect x="5" y="25" width="30" height="4" rx="2" fill="white"/>
+          <!-- Stripe -->
+          <path d="M11 27 Q20 20 29 27" stroke="#f97316" stroke-width="1.5" fill="none" opacity="0.55"/>
+          <!-- PS text -->
+          <text x="20" y="23" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#f97316">PS</text>
+          <!-- Shine highlight -->
+          <path d="M13 17 Q16 11 20 10" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
         </svg>
       </div>
       <div class="brand-name" id="animatedBrandName"></div>
     </div>
-    <div id="google_translate_element"></div>
+    <!-- Manual Language Switcher -->
+    <div class="lang-switcher" id="langSwitcher" role="group" aria-label="Language switcher">
+      <button class="lang-btn active" id="langEn" onclick="setLanguage('en')" title="English">EN</button>
+      <button class="lang-btn" id="langHi" onclick="setLanguage('hi')" title="Hindi">हि</button>
+      <button class="lang-btn" id="langHg" onclick="setLanguage('hg')" title="Hinglish">HG</button>
+    </div>
     <div class="topbar-right">
       
       <div class="topbar-worker-name" id="topbarName">Loading...</div>
@@ -1226,10 +1509,12 @@ body {
 const firebaseConfig = {
   apiKey: "AIzaSyDTpS1oqcwP26FEVJlg7UbN2uK6jlRdYx4",
   authDomain: "ps-construction-tech.firebaseapp.com",
+  databaseURL: "https://ps-construction-tech-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ps-construction-tech",
-  storageBucket: "ps-construction-tech.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "ps-construction-tech.firebasestorage.app",
+  messagingSenderId: "417310475711",
+  appId: "1:417310475711:web:a8c25cb91eaae4f7610d0a",
+  measurementId: "G-3MECQJ5P0T"
 };
 
 // ============================
@@ -1917,17 +2202,28 @@ function openWhatsApp() {
   window.open(`https://wa.me/${adminPhone}?text=${msg}`, '_blank');
 }
 
-function showContactAdmin() {
-  // Direct WhatsApp to admin
-  openWhatsApp();
-}
+
 
 // ============================
 // INIT
 // ============================
 document.addEventListener('DOMContentLoaded', () => {
+  // Safety: always hide loading overlay immediately on page load
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) overlay.classList.add('hidden');
+
   initTheme();
-  checkAuth(); // This now clears session and shows login
+  initLanguage();
+  checkAuth();
+
+  // Failsafe: if overlay is still visible after 3s, force hide it
+  setTimeout(() => {
+    const ov = document.getElementById('loadingOverlay');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+    }
+  }, 3000);
+
   // Close modals on backdrop click
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     backdrop.addEventListener('click', (e) => {
@@ -1935,6 +2231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   // Animated brand name
+  initSparkles();
   animateBrandName();
 });
 
@@ -1949,17 +2246,249 @@ function animateBrandName() {
     return `<span class="brand-char${isAccent ? ' accent' : ''}" style="animation-delay:${delay}s">${ch === ' ' ? '&nbsp;' : ch}</span>`;
   }).join('');
 }
-</script>
-<script>
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement({
-    pageLanguage: 'en',
-    includedLanguages: 'en,hi',
-    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-  }, 'google_translate_element');
+
+// ============================
+// SPARKLE PARTICLES
+// ============================
+function initSparkles() {
+  const field = document.getElementById('sparkleField');
+  if (!field) return;
+  const colors = ['rgba(249,115,22,0.6)', 'rgba(59,130,246,0.5)', 'rgba(139,92,246,0.5)', 'rgba(255,255,255,0.7)'];
+  for (let i = 0; i < 30; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    const size = Math.random() * 4 + 2;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random() * 100}%;
+      top:${Math.random() * 100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --dur:${(Math.random() * 3 + 2).toFixed(1)}s;
+      --delay:-${(Math.random() * 4).toFixed(1)}s;
+      --max-op:${(Math.random() * 0.4 + 0.15).toFixed(2)};
+      filter:blur(${size > 4 ? 1 : 0}px);
+    `;
+    field.appendChild(s);
+  }
+}
+
+// ============================
+// MANUAL LANGUAGE SYSTEM
+// ============================
+const LANG_STRINGS = {
+  en: {
+    brandName: 'PS Construction',
+    loginTitle: 'PS Panel',
+    loginSub: 'Management System',
+    workerIdLabel: 'Worker ID (e.g. PSC101)',
+    workerIdPlaceholder: 'e.g. PSC001',
+    loginBtn: 'Login →',
+    loginNote: 'Get your Unique Worker ID from the admin. After first login, you can set your own password.',
+    passwordLabel: 'Password',
+    passwordPlaceholder: 'Enter your password',
+    setNewPassLabel: 'Set New Password (min 4 characters)',
+    setNewPassPlaceholder: 'New password',
+    confirmPassPlaceholder: 'Confirm password',
+    loginBtn2: 'Login',
+    goBack: '← Go Back',
+    refreshBtn: 'Refresh',
+    changePassBtn: 'Change Password',
+    downloadSlipBtn: 'Download Salary Slip',
+    attendanceTab: '📋 Attendance',
+    otTab: '⏱ Overtime',
+    loadingText: 'Loading your workspace…',
+    waBtn: 'WhatsApp Support',
+    adminBtn: 'Contact Admin',
+    logoutBtn: 'Logout',
+    profileEditing: 'Profile editing disabled by admin',
+    editProfileTitle: 'Edit Profile',
+    fullNameLabel: 'Full Name',
+    phoneLabel: 'Phone Number',
+    siteLabel: 'Assigned Site',
+    roleLabel: 'Role / Designation',
+    cancelBtn: 'Cancel',
+    saveChangesBtn: 'Save Changes',
+    changePassTitle: 'Change Password',
+    currPassLabel: 'Current Password',
+    newPassLabel: 'New Password',
+    confirmNewPassLabel: 'Confirm New Password',
+    updatePassBtn: 'Update Password',
+    contactAdminTitle: 'Contact Admin',
+    subjectLabel: 'Subject',
+    messageLabel: 'Message',
+    sendMsgBtn: 'Send Message',
+  },
+  hi: {
+    brandName: 'पीएस कंस्ट्रक्शन',
+    loginTitle: 'पीएस पैनल',
+    loginSub: 'प्रबंधन प्रणाली',
+    workerIdLabel: 'कर्मचारी आईडी (जैसे PSC101)',
+    workerIdPlaceholder: 'जैसे PSC001',
+    loginBtn: 'लॉगिन करें →',
+    loginNote: 'अपना यूनिक वर्कर आईडी एडमिन से प्राप्त करें। पहली बार लॉगिन के बाद आप अपना पासवर्ड सेट कर सकते हैं।',
+    passwordLabel: 'पासवर्ड',
+    passwordPlaceholder: 'अपना पासवर्ड डालें',
+    setNewPassLabel: 'नया पासवर्ड सेट करें (कम से कम 4 अक्षर)',
+    setNewPassPlaceholder: 'नया पासवर्ड',
+    confirmPassPlaceholder: 'पासवर्ड दोबारा डालें',
+    loginBtn2: 'लॉगिन',
+    goBack: '← वापस जाएं',
+    refreshBtn: 'रिफ्रेश',
+    changePassBtn: 'पासवर्ड बदलें',
+    downloadSlipBtn: 'वेतन पर्ची डाउनलोड करें',
+    attendanceTab: '📋 उपस्थिति',
+    otTab: '⏱ ओवरटाइम',
+    loadingText: 'आपका डैशबोर्ड लोड हो रहा है…',
+    waBtn: 'व्हाट्सएप सहायता',
+    adminBtn: 'एडमिन से संपर्क करें',
+    logoutBtn: 'लॉगआउट',
+    profileEditing: 'एडमिन ने प्रोफाइल संपादन बंद किया है',
+    editProfileTitle: 'प्रोफाइल संपादित करें',
+    fullNameLabel: 'पूरा नाम',
+    phoneLabel: 'फोन नंबर',
+    siteLabel: 'कार्यस्थल',
+    roleLabel: 'पद / भूमिका',
+    cancelBtn: 'रद्द करें',
+    saveChangesBtn: 'बदलाव सहेजें',
+    changePassTitle: 'पासवर्ड बदलें',
+    currPassLabel: 'वर्तमान पासवर्ड',
+    newPassLabel: 'नया पासवर्ड',
+    confirmNewPassLabel: 'नया पासवर्ड दोबारा डालें',
+    updatePassBtn: 'पासवर्ड अपडेट करें',
+    contactAdminTitle: 'एडमिन से संपर्क करें',
+    subjectLabel: 'विषय',
+    messageLabel: 'संदेश',
+    sendMsgBtn: 'संदेश भेजें',
+  },
+  hg: {
+    brandName: 'PS Construction',
+    loginTitle: 'PS Panel',
+    loginSub: 'Management System',
+    workerIdLabel: 'Worker ID daalo (jaise PSC101)',
+    workerIdPlaceholder: 'jaise PSC001',
+    loginBtn: 'Login Karo →',
+    loginNote: 'Apna Unique Worker ID admin se lo. Pehli baar login ke baad apna password set kar sakte ho.',
+    passwordLabel: 'Password',
+    passwordPlaceholder: 'Apna password daalo',
+    setNewPassLabel: 'Naya Password set karo (kam se kam 4 letters)',
+    setNewPassPlaceholder: 'Naya password',
+    confirmPassPlaceholder: 'Password dobara daalo',
+    loginBtn2: 'Login Karo',
+    goBack: '← Wapas Jao',
+    refreshBtn: 'Refresh Karo',
+    changePassBtn: 'Password Badlo',
+    downloadSlipBtn: 'Salary Slip Download Karo',
+    attendanceTab: '📋 Haaziri',
+    otTab: '⏱ Overtime',
+    loadingText: 'Aapka dashboard load ho raha hai…',
+    waBtn: 'WhatsApp Support',
+    adminBtn: 'Admin se Baat Karo',
+    logoutBtn: 'Logout Karo',
+    profileEditing: 'Admin ne profile editing band ki hai',
+    editProfileTitle: 'Profile Edit Karo',
+    fullNameLabel: 'Poora Naam',
+    phoneLabel: 'Phone Number',
+    siteLabel: 'Site Ka Naam',
+    roleLabel: 'Post / Kaam',
+    cancelBtn: 'Cancel',
+    saveChangesBtn: 'Save Karo',
+    changePassTitle: 'Password Badlo',
+    currPassLabel: 'Purana Password',
+    newPassLabel: 'Naya Password',
+    confirmNewPassLabel: 'Naya Password dobara',
+    updatePassBtn: 'Password Update Karo',
+    contactAdminTitle: 'Admin se Baat Karo',
+    subjectLabel: 'Vishay / Topic',
+    messageLabel: 'Message',
+    sendMsgBtn: 'Message Bhejo',
+  }
+};
+
+let currentLang = localStorage.getItem('ps_lang') || 'en';
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('ps_lang', lang);
+  // Update active button
+  ['en','hi','hg'].forEach(l => {
+    const btn = document.getElementById('langE' + l.charAt(0).toUpperCase() + l.slice(1)) 
+             || document.getElementById('lang' + (l === 'en' ? 'En' : l === 'hi' ? 'Hi' : 'Hg'));
+    if (btn) btn.classList.toggle('active', l === lang);
+  });
+  applyLanguage(lang);
+}
+
+function applyLanguage(lang) {
+  const s = LANG_STRINGS[lang] || LANG_STRINGS.en;
+  const set = (id, key) => { const el = document.getElementById(id); if (el) el.textContent = s[key]; };
+  const setPlaceholder = (id, val) => { const el = document.getElementById(id); if (el) el.placeholder = val; };
+  const setLabel = (id, val) => { const el = document.getElementById(id); if (el && el.tagName === 'LABEL') el.textContent = val; };
+
+  // Brand
+  set('animatedBrandName', 'brandName');
+  // Login page
+  set('loginTitleEl', 'loginTitle');
+  set('loginSubEl', 'loginSub');
+  setLabel('workerIdLabelEl', s.workerIdLabel);
+  setPlaceholder('loginWorkerId', s.workerIdPlaceholder);
+  // Login button step1
+  const loginBtn1 = document.querySelector('#loginStep1 .btn-login');
+  if (loginBtn1) loginBtn1.innerHTML = s.loginBtn;
+  const demoNote = document.querySelector('.demo-note');
+  if (demoNote) demoNote.innerHTML = s.loginNote;
+  // Loading
+  const loadingText = document.querySelector('.loading-text');
+  if (loadingText) loadingText.textContent = s.loadingText;
+  // WA & Admin FABs
+  const fabWa = document.querySelector('.fab-wa');
+  if (fabWa) { const svg = fabWa.querySelector('svg'); fabWa.textContent = ''; if (svg) fabWa.appendChild(svg); fabWa.appendChild(document.createTextNode(' ' + s.waBtn)); }
+  const fabAdmin = document.querySelector('.fab-admin');
+  if (fabAdmin) { const svg = fabAdmin.querySelector('svg'); fabAdmin.textContent = ''; if (svg) fabAdmin.appendChild(svg); fabAdmin.appendChild(document.createTextNode(' ' + s.adminBtn)); }
+  // Logout
+  const logoutSpan = document.querySelector('.logout-btn span');
+  if (logoutSpan) logoutSpan.textContent = s.logoutBtn;
+  // Refresh & change pass
+  const refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) { const svg = refreshBtn.querySelector('svg'); refreshBtn.textContent = ''; if (svg) refreshBtn.appendChild(svg); refreshBtn.appendChild(document.createTextNode(' ' + s.refreshBtn)); }
+  const changePassBtn = document.querySelector('.profile-action-btn:nth-of-type(2)');
+  if (changePassBtn) { const svg = changePassBtn.querySelector('svg'); changePassBtn.textContent = ''; if (svg) changePassBtn.appendChild(svg); changePassBtn.appendChild(document.createTextNode(' ' + s.changePassBtn)); }
+  // Tab buttons
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  if (tabBtns[0]) tabBtns[0].textContent = s.attendanceTab;
+  if (tabBtns[1]) tabBtns[1].textContent = s.otTab;
+  // Download slip btn
+  const dlBtn = document.querySelector('.download-btn');
+  if (dlBtn) { const svg = dlBtn.querySelector('svg'); dlBtn.textContent = ''; if (svg) dlBtn.appendChild(svg); dlBtn.appendChild(document.createTextNode(' ' + s.downloadSlipBtn)); }
+  // Re-animate brand name (since we replaced text)
+  if (lang !== 'en') {
+    const brandEl = document.getElementById('animatedBrandName');
+    if (brandEl) brandEl.textContent = s.brandName;
+  } else {
+    animateBrandName();
+  }
+}
+
+function setLangAll(lang) {
+  setLanguage(lang);
+  // Sync login page buttons
+  ['En','Hi','Hg'].forEach(l => {
+    const btn = document.getElementById('loginLang' + l);
+    if (btn) btn.classList.toggle('active', l.toLowerCase() === lang || (l === 'Hg' && lang === 'hg') || (l === 'Hi' && lang === 'hi') || (l === 'En' && lang === 'en'));
+  });
+}
+
+// Init language on page load
+function initLanguage() {
+  const saved = localStorage.getItem('ps_lang') || 'en';
+  currentLang = saved;
+  ['en','hi','hg'].forEach(l => {
+    const topBtn = document.getElementById('lang' + (l === 'en' ? 'En' : l === 'hi' ? 'Hi' : 'Hg'));
+    if (topBtn) topBtn.classList.toggle('active', l === saved);
+    const loginBtn = document.getElementById('loginLang' + (l === 'en' ? 'En' : l === 'hi' ? 'Hi' : 'Hg'));
+    if (loginBtn) loginBtn.classList.toggle('active', l === saved);
+  });
+  if (saved !== 'en') applyLanguage(saved);
 }
 </script>
-
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
