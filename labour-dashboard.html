@@ -1198,7 +1198,7 @@ body {
         <input class="form-input" id="loginPassword" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
       <div class="form-group" id="newPassWrap" style="display:none">
-        <label class="form-label">Set New Password (min 4 characters)</label>
+        <label class="form-label" id="setNewPassLabelEl">Set New Password (min 4 characters)</label>
         <input class="form-input" id="setNewPass" type="password" placeholder="New password" onkeydown="if(event.key==='Enter')doLogin()"/>
         <input class="form-input" id="setConfirmPass" type="password" placeholder="Confirm password" style="margin-top:8px" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
@@ -1401,7 +1401,7 @@ body {
         <div class="tab-content active" id="tab-att">
           <div class="panel-body-scroll" style="max-height:280px">
             <table class="data-table" id="attendanceTable">
-              <thead><tr><th>Date</th><th>Day</th><th>Status</th><th>Hours</th></tr></thead>
+              <thead><tr><th id="thDate">Date</th><th id="thDay">Day</th><th id="thStatus">Status</th><th id="thHours">Hours</th></tr></thead>
               <tbody id="attendanceTbody">
                 <tr><td colspan="4"><div class="empty-state"><p>No attendance records</p></div></td></tr>
               </tbody>
@@ -1632,22 +1632,23 @@ async function checkWorkerId() {
     return;
   }
   
+  const sCheck = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   pendingWorkerData = worker;
   document.getElementById('loginWorkerIdDisplay').textContent = pscId;
   
   // Check if worker has a password set
   if (worker.workerPassword) {
     // Existing user - ask for password
-    document.getElementById('passwordLabel').textContent = 'Password';
+    document.getElementById('passwordLabel').textContent = sCheck.passwordLabel || 'Password';
     document.getElementById('passwordFieldWrap').style.display = 'block';
     document.getElementById('newPassWrap').style.display = 'none';
-    document.getElementById('loginBtn').textContent = 'Login';
+    document.getElementById('loginBtn').textContent = sCheck.loginBtn2 || 'Login';
   } else {
     // First time - let them in directly, then set password
     document.getElementById('passwordFieldWrap').style.display = 'none';
     document.getElementById('newPassWrap').style.display = 'block';
-    document.getElementById('loginBtn').textContent = 'Set Password & Login';
-    showToast('info', 'First Time Login', 'Please set a new password to continue.');
+    document.getElementById('loginBtn').textContent = s.setPassLoginBtn || 'Set Password & Login';
+    showToast('info', s.firstTimeTitle || 'First Time Login', s.firstTimeMsg || 'Please set a new password to continue.');
   }
   
   document.getElementById('loginStep1').style.display = 'none';
@@ -1664,6 +1665,7 @@ function backToStep1() {
 }
 
 async function doLogin() {
+  const s = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   if (!pendingWorkerData) { showToast('error', 'Error', 'Please enter your Worker ID first.'); return; }
   const worker = pendingWorkerData;
 
@@ -1707,7 +1709,8 @@ function doLogout() {
   document.getElementById('loginStep2').style.display = 'none';
   document.getElementById('loginWorkerId').value = '';
   pendingWorkerData = null;
-  showToast('info', 'Logged Out', 'You have been logged out safely.');
+  const sLang = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
+  showToast('info', sLang.toastLoggedOut || 'Logged Out', sLang.toastLoggedOutMsg || 'You have been logged out safely.');
 }
 
 function checkAuth() {
@@ -1788,7 +1791,7 @@ async function loadDashboard() {
 
   // Hide loading
   document.getElementById('loadingOverlay').classList.add('hidden');
-  showToast('success', 'Welcome!', `Namaste, ${(currentWorker.name||'Worker').split(' ')[0]}! Aapka dashboard tayyar hai.`);
+  showToast('success', s.toastWelcomeTitle || 'Welcome!', `Namaste, ${(currentWorker.name||'Worker').split(' ')[0]}! Aapka dashboard tayyar hai.`);
 }
 
 function animateCounter(id, from, to, prefix, duration) {
@@ -1810,10 +1813,11 @@ function animateCounter(id, from, to, prefix, duration) {
 // RENDER FUNCTIONS
 // ============================
 function renderPayments(payments) {
+  const s = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   const container = document.getElementById('paymentHistoryList');
-  document.getElementById('paymentCountBadge').textContent = payments.length + ' records';
+  document.getElementById('paymentCountBadge').textContent = payments.length + ' ' + s.records;
   if (!payments.length) {
-    container.innerHTML = `<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5"/></svg><p>No payment records found</p></div>`;
+    container.innerHTML = `<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5"/></svg><p>${s.noPaymentRecords}</p></div>`;
     return;
   }
   const sorted = [...payments].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -1836,9 +1840,10 @@ function renderPayments(payments) {
 }
 
 function renderAttendance(att) {
+  const s = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   const tbody = document.getElementById('attendanceTbody');
   if (!att.length) {
-    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><p>No attendance records found</p></div></td></tr>';
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><p>${s.noAttRecords}</p></div></td></tr>`;
     return;
   }
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1849,10 +1854,10 @@ function renderAttendance(att) {
     const dayName = days[d.getDay()];
     const st = a.status || 'Absent';
     const badge = st === 'Present'
-      ? '<span class="status-badge present">Present</span>'
+      ? `<span class="status-badge present">${s.statusPresent}</span>`
       : st === 'Half Day'
-      ? '<span class="status-badge" style="background:rgba(249,115,22,0.12);color:#f97316">Half Day</span>'
-      : '<span class="status-badge absent">Absent</span>';
+      ? `<span class="status-badge" style="background:rgba(249,115,22,0.12);color:#f97316">${s.statusHalfDay}</span>`
+      : `<span class="status-badge absent">${s.statusAbsent}</span>`;
     return `<tr>
       <td>${dStr} <span style="color:var(--text-muted);font-size:11px">${dayName}</span></td>
       <td>${badge}</td>
@@ -1862,23 +1867,24 @@ function renderAttendance(att) {
 }
 
 function renderOT(ot) {
+  const s = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   const container = document.getElementById('otList');
   if (!ot.length) {
     container.innerHTML = `<div class="empty-state">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      <p>No overtime records found</p>
+      <p>${s.noOtRecords}</p>
     </div>`;
     return;
   }
-  const total = ot.reduce((s,o) => s + (parseFloat(o.hours)||0), 0);
+  const total = ot.reduce((s2,o) => s2 + (parseFloat(o.hours)||0), 0);
   const dailyRate = parseFloat(currentWorker?.rate||0);
   const otRate = dailyRate > 0 ? Math.round(dailyRate / 8) : 0;
-  const totalOtAmt = ot.reduce((s,o) => s + (parseFloat(o.hours)||0) * (parseFloat(o.rate)||otRate), 0);
+  const totalOtAmt = ot.reduce((s2,o) => s2 + (parseFloat(o.hours)||0) * (parseFloat(o.rate)||otRate), 0);
   container.innerHTML = `
     <div style="padding:12px 22px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-      <span style="font-size:0.78rem;color:var(--text-muted)">Total OT Hours: <strong style="color:var(--accent)">${total} hrs</strong></span>
-      <span style="font-size:0.78rem;color:var(--text-muted)">OT Rate: <strong style="color:var(--accent)">₹${otRate}/hr</strong> (salary÷8)</span>
-      <span style="font-size:0.78rem;color:var(--text-muted)">Total OT Amount: <strong style="color:var(--green)">₹${totalOtAmt.toLocaleString()}</strong></span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">${s.totalOTHours}: <strong style="color:var(--accent)">${total} hrs</strong></span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">${s.otRate}: <strong style="color:var(--accent)">₹${otRate}/hr</strong></span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">${s.totalOTAmt}: <strong style="color:var(--green)">₹${totalOtAmt.toLocaleString()}</strong></span>
     </div>
     ${[...ot].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).map(o => {
       const d = new Date((o.date||'') + 'T12:00:00');
@@ -1909,7 +1915,8 @@ function switchTab(tab) {
 // MODALS
 // ============================
 function showEditProfile() {
-  showToast('warn', 'Disabled', 'Profile editing is disabled by admin.');
+  const sM = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
+  showToast('warn', sM.toastProfileDisabled || 'Disabled', sM.toastProfileDisabledMsg || 'Profile editing is disabled by admin.');
   return;
 }
 function showChangePassword() {
@@ -1948,18 +1955,20 @@ async function changePassword() {
   if (np !== cp) { showToast('warn', 'Passwords Do Not Match', 'New passwords must be the same.'); return; }
   await saveWorkerPassword(currentWorker.id, np);
   currentWorker.workerPassword = np;
+  const sPass = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   closeModal('changePassModal');
   document.getElementById('currPass').value = '';
   document.getElementById('newPass').value = '';
   document.getElementById('confirmPass').value = '';
-  showToast('success', 'Password Changed', 'Your new password has been saved.');
+  showToast('success', sPass.toastPassChanged || 'Password Changed', sPass.toastPassChangedMsg || 'Your new password has been saved.');
 }
 function sendToAdmin() {
   const subj = document.getElementById('contactSubject').value.trim();
   const msg  = document.getElementById('contactMessage').value.trim();
+  const sMsgLang = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
   if (!subj || !msg) { showToast('warn', 'Incomplete', 'Please fill both subject and message.'); return; }
   closeModal('contactAdminModal');
-  showToast('success', 'Message Sent', 'Your message has been sent to the admin.');
+  showToast('success', sMsgLang.toastMsgSent || 'Message Sent', sMsgLang.toastMsgSentMsg || 'Your message has been sent to the admin.');
   // Firebase: save to Firestore messages collection
 }
 
@@ -2142,7 +2151,8 @@ function downloadSalarySlip() {
   doc.text('This is a computer-generated salary slip. For queries, contact admin.', pw / 2, y + 5, { align: 'center' });
 
   doc.save(`Salary_Slip_${empId}_${currentWorker.name || 'Worker'}.pdf`);
-  showToast('success', 'Salary Slip Downloaded', 'PDF saved successfully.');
+  const sSlip = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
+  showToast('success', sSlip.toastSlipDownloaded || 'Salary Slip Downloaded', sSlip.toastSlipDownloadedMsg || 'PDF saved successfully.');
 }
 
 // ============================
@@ -2164,7 +2174,8 @@ async function refreshDashboard() {
     const icon = btn.querySelector('svg');
     if (icon) icon.style.animation = '';
   }
-  showToast('success', 'Refreshed', 'Dashboard data has been updated.');
+  const s2 = LANG_STRINGS[currentLang] || LANG_STRINGS.en;
+  showToast('success', s2.toastRefreshed || 'Refreshed', s2.toastRefreshedMsg || 'Dashboard data has been updated.');
 }
 
 // ============================
@@ -2190,7 +2201,7 @@ function startInactivityTimer() {
       document.getElementById('inactivityWarn').classList.add('show');
     }
     if (inactivitySeconds >= INACTIVITY_LIMIT) {
-      showToast('warn', 'Session Expired', 'You have been logged out due to inactivity.');
+      showToast('warn', (LANG_STRINGS[currentLang]||LANG_STRINGS.en).toastSessionExpired || 'Session Expired', (LANG_STRINGS[currentLang]||LANG_STRINGS.en).toastSessionExpiredMsg || 'You have been logged out due to inactivity.');
       setTimeout(doLogout, 1500);
     }
   }, 1000);
@@ -2330,6 +2341,73 @@ const LANG_STRINGS = {
     subjectLabel: 'Subject',
     messageLabel: 'Message',
     sendMsgBtn: 'Send Message',
+    // Dashboard labels
+    workingDaysLabel: 'Working Days',
+    thisMonth: 'This month',
+    totalSalaryLabel: 'Total Salary',
+    grossEarnings: 'Gross earnings',
+    totalPaidLabel: 'Total Paid',
+    amtReceived: 'Amount received',
+    pendingAmtLabel: 'Pending Amount',
+    toBeReceived: 'To be received',
+    salaryBreakdownTitle: 'Salary Breakdown',
+    salarySlipBtn: 'Salary Slip',
+    basicWages: 'Basic Wages',
+    overtimeAmt: 'Overtime Amount',
+    bonusAllowances: 'Bonus / Allowances',
+    totalSalaryRow: 'Total Salary',
+    amtPaidRow: 'Amount Paid',
+    balancePending: 'Balance Pending',
+    paymentProgress: 'Payment Progress',
+    paymentHistoryTitle: 'Payment History',
+    noPaymentRecords: 'No payment records found',
+    attOtTitle: 'Attendance & Overtime',
+    noAttRecords: 'No attendance records found',
+    noOtRecords: 'No overtime records found',
+    dateCol: 'Date',
+    statusCol: 'Status',
+    hoursCol: 'Hours',
+    statusPresent: 'उपस्थित',
+    statusAbsent: 'अनुपस्थित',
+    statusHalfDay: 'आधा दिन',
+    totalOTHours: 'Total OT Hours',
+    otRate: 'OT Rate',
+    totalOTAmt: 'Total OT Amount',
+    records: 'records',
+    editProfileBtn: 'Edit Profile',
+    inactivityMsg: 'Auto-logout in',
+    // Modal labels
+    editProfileModalTitle: 'Edit Profile',
+    changePassModalTitle: 'Change Password',
+    contactAdminModalTitle: 'Contact Admin',
+    fullNamePlaceholder: 'Full Name',
+    phonePlaceholder: '+91 XXXXX XXXXX',
+    sitePlaceholder: 'Site Name',
+    rolePlaceholder: 'e.g. Mason, Helper',
+    currPassPlaceholder: 'Current password',
+    newPassPlaceholder: 'New password (min 6 chars)',
+    confirmNewPassPlaceholder: 'Confirm new password',
+    subjectPlaceholder: 'e.g. Salary discrepancy, Leave request',
+    messagePlaceholder: 'Describe your issue or query...',
+    // Toast messages
+    toastWelcomeTitle: 'Welcome!',
+    toastRefreshed: 'Refreshed',
+    toastRefreshedMsg: 'Dashboard data has been updated.',
+    toastProfileDisabled: 'Disabled',
+    toastProfileDisabledMsg: 'Profile editing is disabled by admin.',
+    toastPassChanged: 'Password Changed',
+    toastPassChangedMsg: 'Your new password has been saved.',
+    toastMsgSent: 'Message Sent',
+    toastMsgSentMsg: 'Your message has been sent to the admin.',
+    toastSlipDownloaded: 'Salary Slip Downloaded',
+    toastSlipDownloadedMsg: 'PDF saved successfully.',
+    toastSessionExpired: 'Session Expired',
+    toastSessionExpiredMsg: 'You have been logged out due to inactivity.',
+    toastLoggedOut: 'Logged Out',
+    toastLoggedOutMsg: 'You have been logged out safely.',
+    setPassLoginBtn: 'Set Password & Login',
+    firstTimeTitle: 'First Time Login',
+    firstTimeMsg: 'Please set a new password to continue.',
   },
   hi: {
     brandName: 'पीएस कंस्ट्रक्शन',
@@ -2372,6 +2450,73 @@ const LANG_STRINGS = {
     subjectLabel: 'विषय',
     messageLabel: 'संदेश',
     sendMsgBtn: 'संदेश भेजें',
+    // Dashboard labels
+    workingDaysLabel: 'काम के दिन',
+    thisMonth: 'इस महीने',
+    totalSalaryLabel: 'कुल तनख्वाह',
+    grossEarnings: 'कुल कमाई',
+    totalPaidLabel: 'कुल मिला',
+    amtReceived: 'मिली हुई राशि',
+    pendingAmtLabel: 'बाकी रकम',
+    toBeReceived: 'मिलनी बाकी है',
+    salaryBreakdownTitle: 'तनख्वाह का हिसाब',
+    salarySlipBtn: 'वेतन पर्ची',
+    basicWages: 'बेसिक मजदूरी',
+    overtimeAmt: 'ओवरटाइम रकम',
+    bonusAllowances: 'बोनस / भत्ता',
+    totalSalaryRow: 'कुल तनख्वाह',
+    amtPaidRow: 'दी गई रकम',
+    balancePending: 'बाकी रकम',
+    paymentProgress: 'भुगतान की स्थिति',
+    paymentHistoryTitle: 'भुगतान का इतिहास',
+    noPaymentRecords: 'कोई भुगतान नहीं मिला',
+    attOtTitle: 'हाजिरी और ओवरटाइम',
+    noAttRecords: 'कोई हाजिरी नहीं मिली',
+    noOtRecords: 'कोई ओवरटाइम नहीं मिला',
+    dateCol: 'तारीख',
+    statusCol: 'स्थिति',
+    hoursCol: 'घंटे',
+    statusPresent: 'हाजिर',
+    statusAbsent: 'गैर-हाजिर',
+    statusHalfDay: 'आधा दिन',
+    totalOTHours: 'कुल ओवरटाइम घंटे',
+    otRate: 'ओवरटाइम रेट',
+    totalOTAmt: 'कुल ओवरटाइम रकम',
+    records: 'रिकॉर्ड',
+    editProfileBtn: 'प्रोफाइल बदलें',
+    inactivityMsg: 'अपने आप लॉगआउट',
+    // Modal labels
+    editProfileModalTitle: 'प्रोफाइल बदलें',
+    changePassModalTitle: 'पासवर्ड बदलें',
+    contactAdminModalTitle: 'एडमिन से बात करें',
+    fullNamePlaceholder: 'पूरा नाम',
+    phonePlaceholder: '+91 XXXXX XXXXX',
+    sitePlaceholder: 'साइट का नाम',
+    rolePlaceholder: 'जैसे राजमिस्त्री, मजदूर',
+    currPassPlaceholder: 'पुराना पासवर्ड',
+    newPassPlaceholder: 'नया पासवर्ड (कम से कम 6 अक्षर)',
+    confirmNewPassPlaceholder: 'नया पासवर्ड दोबारा डालें',
+    subjectPlaceholder: 'जैसे तनख्वाह में गड़बड़ी, छुट्टी',
+    messagePlaceholder: 'अपनी समस्या यहाँ लिखें...',
+    // Toast messages
+    toastWelcomeTitle: 'स्वागत है!',
+    toastRefreshed: 'अपडेट हो गया',
+    toastRefreshedMsg: 'डैशबोर्ड का डेटा नया हो गया।',
+    toastProfileDisabled: 'बंद है',
+    toastProfileDisabledMsg: 'एडमिन ने प्रोफाइल बदलना बंद किया है।',
+    toastPassChanged: 'पासवर्ड बदल गया',
+    toastPassChangedMsg: 'नया पासवर्ड सेव हो गया।',
+    toastMsgSent: 'संदेश भेज दिया',
+    toastMsgSentMsg: 'आपका संदेश एडमिन को मिल गया।',
+    toastSlipDownloaded: 'वेतन पर्ची डाउनलोड हुई',
+    toastSlipDownloadedMsg: 'PDF सेव हो गई।',
+    toastSessionExpired: 'सेशन खत्म',
+    toastSessionExpiredMsg: 'कुछ देर से काम नहीं किया, इसलिए लॉगआउट हो गए।',
+    toastLoggedOut: 'लॉगआउट हो गए',
+    toastLoggedOutMsg: 'आप सुरक्षित रूप से लॉगआउट हो गए।',
+    setPassLoginBtn: 'पासवर्ड सेट करें और लॉगिन करें',
+    firstTimeTitle: 'पहली बार लॉगिन',
+    firstTimeMsg: 'आगे बढ़ने के लिए नया पासवर्ड सेट करें।',
   },
   hg: {
     brandName: 'PS Construction',
@@ -2414,6 +2559,73 @@ const LANG_STRINGS = {
     subjectLabel: 'Vishay / Topic',
     messageLabel: 'Message',
     sendMsgBtn: 'Message Bhejo',
+    // Dashboard labels
+    workingDaysLabel: 'Kaam ke Din',
+    thisMonth: 'Is Mahine',
+    totalSalaryLabel: 'Poori Salary',
+    grossEarnings: 'Kul Kamai',
+    totalPaidLabel: 'Kul Mila',
+    amtReceived: 'Mili Rakam',
+    pendingAmtLabel: 'Baaki Rakam',
+    toBeReceived: 'Milni Baaki Hai',
+    salaryBreakdownTitle: 'Salary ka Hisaab',
+    salarySlipBtn: 'Salary Slip',
+    basicWages: 'Basic Majdoori',
+    overtimeAmt: 'Overtime Rakam',
+    bonusAllowances: 'Bonus / Bhatta',
+    totalSalaryRow: 'Poori Salary',
+    amtPaidRow: 'Di Gayi Rakam',
+    balancePending: 'Baaki Rakam',
+    paymentProgress: 'Payment ki Sthiti',
+    paymentHistoryTitle: 'Payment History',
+    noPaymentRecords: 'Koi payment nahi mila',
+    attOtTitle: 'Haaziri aur Overtime',
+    noAttRecords: 'Koi haaziri record nahi mila',
+    noOtRecords: 'Koi overtime record nahi mila',
+    dateCol: 'Tarikh',
+    statusCol: 'Sthiti',
+    hoursCol: 'Ghante',
+    statusPresent: 'Haazir',
+    statusAbsent: 'Gayr-Haazir',
+    statusHalfDay: 'Aadha Din',
+    totalOTHours: 'Kul OT Ghante',
+    otRate: 'OT Rate',
+    totalOTAmt: 'Kul OT Rakam',
+    records: 'records',
+    editProfileBtn: 'Profile Edit Karo',
+    inactivityMsg: 'Auto-logout in',
+    // Modal labels
+    editProfileModalTitle: 'Profile Edit Karo',
+    changePassModalTitle: 'Password Badlo',
+    contactAdminModalTitle: 'Admin se Baat Karo',
+    fullNamePlaceholder: 'Poora Naam',
+    phonePlaceholder: '+91 XXXXX XXXXX',
+    sitePlaceholder: 'Site Ka Naam',
+    rolePlaceholder: 'Jaise Raj Mistri, Mazdoor',
+    currPassPlaceholder: 'Purana Password',
+    newPassPlaceholder: 'Naya Password (kam se kam 6 letters)',
+    confirmNewPassPlaceholder: 'Naya Password dobara daalo',
+    subjectPlaceholder: 'Jaise Salary mein gadbad, Chhuti',
+    messagePlaceholder: 'Apni samasya yahan likho...',
+    // Toast messages
+    toastWelcomeTitle: 'Swagat Hai!',
+    toastRefreshed: 'Update Ho Gaya',
+    toastRefreshedMsg: 'Dashboard ka data naya ho gaya.',
+    toastProfileDisabled: 'Band Hai',
+    toastProfileDisabledMsg: 'Admin ne profile editing band kar rakhi hai.',
+    toastPassChanged: 'Password Badal Gaya',
+    toastPassChangedMsg: 'Naya password save ho gaya.',
+    toastMsgSent: 'Message Bhej Diya',
+    toastMsgSentMsg: 'Aapka message admin ko pahunch gaya.',
+    toastSlipDownloaded: 'Salary Slip Download Hui',
+    toastSlipDownloadedMsg: 'PDF save ho gayi.',
+    toastSessionExpired: 'Session Khatam',
+    toastSessionExpiredMsg: 'Kuch der kaam nahi kiya, isliye logout ho gaye.',
+    toastLoggedOut: 'Logout Ho Gaye',
+    toastLoggedOutMsg: 'Aap safely logout ho gaye.',
+    setPassLoginBtn: 'Password Set Karo aur Login Karo',
+    firstTimeTitle: 'Pehli Baar Login',
+    firstTimeMsg: 'Aage badhne ke liye naya password set karo.',
   }
 };
 
@@ -2478,6 +2690,122 @@ function applyLanguage(lang) {
     if (brandEl) brandEl.textContent = s.brandName;
   } else {
     animateBrandName();
+  }
+
+  // Summary card labels
+  const summaryLabels = document.querySelectorAll('.summary-label');
+  const summarySubtexts = document.querySelectorAll('.summary-subtext');
+  const labelMap = [s.workingDaysLabel, s.totalSalaryLabel, s.totalPaidLabel, s.pendingAmtLabel];
+  const subtextMap = [s.thisMonth, s.grossEarnings, s.amtReceived, s.toBeReceived];
+  summaryLabels.forEach((el, i) => { if (labelMap[i]) el.textContent = labelMap[i]; });
+  summarySubtexts.forEach((el, i) => { if (subtextMap[i]) el.textContent = subtextMap[i]; });
+
+  // Salary panel title & button
+  const salaryPanelTitle = document.querySelector('.panel .panel-title');
+  if (salaryPanelTitle) {
+    const icon = salaryPanelTitle.querySelector('.panel-title-icon');
+    salaryPanelTitle.textContent = '';
+    if (icon) salaryPanelTitle.appendChild(icon);
+    salaryPanelTitle.appendChild(document.createTextNode(' ' + s.salaryBreakdownTitle));
+  }
+  const dlBtn2 = document.querySelector('.download-btn');
+  if (dlBtn2) { const svg = dlBtn2.querySelector('svg'); dlBtn2.textContent = ''; if (svg) dlBtn2.appendChild(svg); dlBtn2.appendChild(document.createTextNode(' ' + s.salarySlipBtn)); }
+
+  // Salary rows
+  const salaryRowLabels = document.querySelectorAll('.salary-row-label');
+  const salaryRowMap = [s.basicWages, s.overtimeAmt, s.bonusAllowances, s.totalSalaryRow, s.amtPaidRow, s.balancePending];
+  salaryRowLabels.forEach((el, i) => { if (salaryRowMap[i]) el.textContent = salaryRowMap[i]; });
+
+  // Progress label
+  const progressLabel = document.querySelector('.progress-label span:first-child');
+  if (progressLabel) progressLabel.textContent = s.paymentProgress;
+
+  // Payment history panel title
+  const panelTitles = document.querySelectorAll('.panel-title');
+  if (panelTitles[1]) {
+    const icon2 = panelTitles[1].querySelector('.panel-title-icon');
+    panelTitles[1].textContent = '';
+    if (icon2) panelTitles[1].appendChild(icon2);
+    panelTitles[1].appendChild(document.createTextNode(' ' + s.paymentHistoryTitle));
+  }
+  if (panelTitles[2]) {
+    const icon3 = panelTitles[2].querySelector('.panel-title-icon');
+    panelTitles[2].textContent = '';
+    if (icon3) panelTitles[2].appendChild(icon3);
+    panelTitles[2].appendChild(document.createTextNode(' ' + s.attOtTitle));
+  }
+
+  // Edit profile button in profile card
+  const editProfileBtn = document.querySelector('.profile-action-btn:first-of-type');
+  if (editProfileBtn) { const svg = editProfileBtn.querySelector('svg'); editProfileBtn.textContent = ''; if (svg) editProfileBtn.appendChild(svg); editProfileBtn.appendChild(document.createTextNode(' ' + s.editProfileBtn)); }
+
+  // Modal titles
+  const editProfileModalTitle = document.querySelector('#editProfileModal .modal-title');
+  if (editProfileModalTitle) { const btn = editProfileModalTitle.querySelector('button'); editProfileModalTitle.textContent = s.editProfileModalTitle; if (btn) editProfileModalTitle.appendChild(btn); }
+  const changePassModalTitle = document.querySelector('#changePassModal .modal-title');
+  if (changePassModalTitle) { const btn = changePassModalTitle.querySelector('button'); changePassModalTitle.textContent = s.changePassModalTitle; if (btn) changePassModalTitle.appendChild(btn); }
+  const contactAdminModalTitle = document.querySelector('#contactAdminModal .modal-title');
+  if (contactAdminModalTitle) { const btn = contactAdminModalTitle.querySelector('button'); contactAdminModalTitle.textContent = s.contactAdminTitle; if (btn) contactAdminModalTitle.appendChild(btn); }
+
+  // Modal form labels & placeholders
+  const editNameInput = document.getElementById('editName');
+  if (editNameInput) editNameInput.placeholder = s.fullNamePlaceholder;
+  const editPhoneInput = document.getElementById('editPhone');
+  if (editPhoneInput) editPhoneInput.placeholder = s.phonePlaceholder;
+  const editSiteInput = document.getElementById('editSite');
+  if (editSiteInput) editSiteInput.placeholder = s.sitePlaceholder;
+  const editRoleInput = document.getElementById('editRole');
+  if (editRoleInput) editRoleInput.placeholder = s.rolePlaceholder;
+  const currPassInput = document.getElementById('currPass');
+  if (currPassInput) currPassInput.placeholder = s.currPassPlaceholder;
+  const newPassInput = document.getElementById('newPass');
+  if (newPassInput) newPassInput.placeholder = s.newPassPlaceholder;
+  const confirmPassInput = document.getElementById('confirmPass');
+  if (confirmPassInput) confirmPassInput.placeholder = s.confirmNewPassPlaceholder;
+  const contactSubjectInput = document.getElementById('contactSubject');
+  if (contactSubjectInput) contactSubjectInput.placeholder = s.subjectPlaceholder;
+  const contactMessageInput = document.getElementById('contactMessage');
+  if (contactMessageInput) contactMessageInput.placeholder = s.messagePlaceholder;
+
+  // Modal cancel/save/update buttons
+  document.querySelectorAll('.modal .btn-ghost').forEach(btn => { btn.textContent = s.cancelBtn; });
+  const saveBtn = document.querySelector('#editProfileModal .btn-primary');
+  if (saveBtn) saveBtn.textContent = s.saveChangesBtn;
+  const updatePassBtn = document.querySelector('#changePassModal .btn-primary');
+  if (updatePassBtn) updatePassBtn.textContent = s.updatePassBtn;
+  const sendMsgBtn2 = document.querySelector('#contactAdminModal .btn-primary');
+  if (sendMsgBtn2) sendMsgBtn2.textContent = s.sendMsgBtn;
+
+  // Inactivity warning text (partial — keep number)
+  const inactWarn = document.getElementById('inactivityWarn');
+  if (inactWarn) {
+    const countdownSpan = document.getElementById('inactivityCountdown');
+    const val = countdownSpan ? countdownSpan.textContent : '60';
+    inactWarn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+    ${s.inactivityMsg} <span id="inactivityCountdown">${val}</span>s`;
+  }
+
+  // Step-2 login labels
+  const setNewPassLabelEl = document.getElementById('setNewPassLabelEl');
+  if (setNewPassLabelEl) setNewPassLabelEl.textContent = s.setNewPassLabel;
+  const setNewPassInput = document.getElementById('setNewPass');
+  if (setNewPassInput) setNewPassInput.placeholder = s.setNewPassPlaceholder;
+  const setConfirmPassInput = document.getElementById('setConfirmPass');
+  if (setConfirmPassInput) setConfirmPassInput.placeholder = s.confirmPassPlaceholder;
+
+  // Table headers
+  const thDate = document.getElementById('thDate'); if (thDate) thDate.textContent = s.dateCol;
+  const thDay = document.getElementById('thDay'); if (thDay) thDay.textContent = currentLang === 'en' ? 'Day' : (currentLang === 'hi' ? 'दिन' : 'Din');
+  const thStatus = document.getElementById('thStatus'); if (thStatus) thStatus.textContent = s.statusCol;
+  const thHours = document.getElementById('thHours'); if (thHours) thHours.textContent = s.hoursCol;
+
+  // Re-render dynamic content if dashboard is visible
+  if (document.getElementById('dashboardPage') && document.getElementById('dashboardPage').style.display !== 'none') {
+    renderAttendance(workerAttendance);
+    renderOT(workerOvertime);
+    renderPayments(workerPayments);
+    const payBadge = document.getElementById('paymentCountBadge');
+    if (payBadge) payBadge.textContent = workerPayments.length + ' ' + s.records;
   }
 }
 
